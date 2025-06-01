@@ -2,8 +2,7 @@
 
 ## An audacious attempt to dethrone Git. (On a serious note: a very simplified and readable basic version control system.)
 
-![BVCS Logo Concept]
-*Image concept: A minimalistic logo, maybe a single branching line, emphasizing simplicity.*
+![Gemini_Generated_Image_9l18fz9l18fz9l18](https://github.com/user-attachments/assets/23bce804-34c7-4ee2-896a-df0b3c816db7)
 
 ## 🚀 Welcome to BVCS!
 
