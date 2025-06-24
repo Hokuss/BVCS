@@ -1,27 +1,27 @@
 #include "branch.hpp"
 
-int32_t version = -1;
-string branch = "main";
+int version;
+string branch;
 
-void config_parser(string config_file = ".bvcs/cnfg.txt") {
-    ifstream inputfile(config_file, ios::binary);
-    if (!inputFile.is_open()) {
+void config_parser() {
+    ifstream inputfile(".bvcs/cnfg.bin", ios::binary);
+    if (!inputfile.is_open()) {
         cerr << "Fatal Error! Configuration Missing. If this is the first time the project is using the BVCS. Please use 'Start' command." << endl;
         return; // Return an error code
     }
-    inputfile.seekg(18);
+    inputfile.seekg(17);
     inputfile >> version;
-    inputFile.seekg(35);
-    getline(inputFile, branch);
+    inputfile.seekg(36);
+    getline(inputfile, branch);
     if (branch.empty()) {
         cerr << "Fatal Error! Branch name missing in configuration." << endl;
         return; // Return an error code
     }
-    inputFile.close();
+    inputfile.close();
 }
 
 void config_writer(const string& branch_name, int version) {
-    ofstream outputfile(".bvcs/cnfg.txt", ios::trunc);
+    ofstream outputfile(".bvcs/cnfg.bin", ios::trunc | ios::binary);
     if (!outputfile) {
         cerr << "Error opening file for writing!" << endl;
         return; // Return an error code
@@ -48,7 +48,7 @@ void new_branch(const string& branch_name) {
         return; // Return an error code
     }
     fs::path first_commit = fs::current_path() / ".bvcs" / "version_history" / branch_name / "0";
-    fs::create_directories(version_history);
+    fs::create_directory(version_history);
     fs::create_directory(first_commit);
     ofstream inputFile(first_commit / "bk_ptr.json", ios::binary);
     if (!inputFile.is_open()) {
@@ -58,12 +58,12 @@ void new_branch(const string& branch_name) {
     inputFile << branch << "\n" << version;
     inputFile.close();
     branch = branch_name; // Update the current branch
-    version = 1; // Reset version for the new branch
-    config_writer(branch_name, 1);
+    version = 0; // Reset version for the new branch
+    config_writer(branch_name, version);
     cout << "New branch '" << branch_name << "' created successfully." << endl;
 }
 
-void recursive_copy(string branch_name, int version, long long remain) {
+void recursive_copy(const string& branch_name, int version, long long remain) {
     if (remain <= 0) {
         return; // No files to process
     }
@@ -75,7 +75,7 @@ void recursive_copy(string branch_name, int version, long long remain) {
         return; // Base case for recursion
     }
     else if (version == 0) {
-        ifsteam inputFile(target_path / "bk_ptr.json", ios::binary);
+        ifstream inputFile(target_path / "bk_ptr.json", ios::binary);
         if (!inputFile.is_open()) {
             cerr << "Error: Unable to open backup pointer file for version 0." << endl;
             return; // Return an error code
@@ -106,11 +106,10 @@ void recursive_copy(string branch_name, int version, long long remain) {
     }
 }
 
-void cc_builder(int version, string branch_name = "main") {
+void cc_builder(int version,const string& branch_name) {
     fs::path current_commit = fs::current_path() / ".bvcs" / "current_commit";
     fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch_name;
     fs::remove_all(current_commit);
-    fs::create_directory(current_commit);
     if(!fs::exists(version_history)) {
         cerr << "Error: Version history for branch '" << branch_name << "' does not exist." << endl;
         return; // Return an error code
@@ -129,15 +128,18 @@ void cc_builder(int version, string branch_name = "main") {
 
 void versioning(){
     config_parser();
-    if (version < 0) {
-        cerr << "Fatal Error! Version number is not set." << endl;
-        return; // Return an error code
-    }
     fs::path current_commit = fs::current_path() / ".bvcs" / "current_commit";
     fs::path staging_area = fs::current_path() / ".bvcs" / "staging_area";
     fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch;
     if (!fs::exists(version_history)) {
-        fs::create_directories(version_history);
+        cerr<< "Branch not found! Error x1" <<endl;
+        cout << branch << endl;
+        return;
+    }
+    fs::directory_iterator dir_iter(staging_area);
+    if (dir_iter == fs::end(dir_iter)) {
+        cerr << "Staging area is empty.! Error x101" << endl;
+        return; // Return an error code
     }
 
     fs::path version_path = version_history / to_string(++version);
@@ -153,23 +155,22 @@ void versioning(){
         cerr << "Fatal Error! Staging area directory does not exist." << endl;
         return; // Return an error code
     }
-    cc_builder(version-1, branch);
+    cc_builder(version, branch);
 }
 
-void merger(const string& branch_name) {
-    fs::path current_commit = fs::current_path() / ".bvcs" / "current_commit";
-    fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch_name;
-    if (!fs::exists(version_history)) {
-        cerr << "Error: Version history for branch '" << branch_name << "' does not exist." << endl;
-        return; // Return an error code
-    }
-    fs::copy(version_history, current_commit, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
-    cout << "Merged branch '" << branch_name << "' into current commit successfully." << endl;
-}
+// void merger(const string& branch_name) {
+//     fs::path current_commit = fs::current_path() / ".bvcs" / "current_commit";
+//     fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch_name;
+//     if (!fs::exists(version_history)) {
+//         cerr << "Error: Version history for branch '" << branch_name << "' does not exist." << endl;
+//         return; // Return an error code
+//     }
+//     fs::copy(version_history, current_commit, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
+//     cout << "Merged branch '" << branch_name << "' into current commit successfully." << endl;
+// }
 
-int main(){
-    config_parser();
-    versioning();
-    cout << "Versioning completed successfully!" << endl;
-    return 0;
-}
+// int main(){
+//     config_parser();
+//     new_branch("test_branch");
+//     return 0;
+// }
