@@ -15,7 +15,7 @@ int main(int argc, char* argv[]){
     fs::path base = fs::current_path();
 
     if (command == "start"){
-        int result = std::system("cd C://Projects//gcc && g++ core.cpp utils.cpp -o core.exe");
+        int result = std::system("cd C://Projects//gcc && g++ core.cpp utils.cpp branch.cpp -o core.exe");
         if (result != 0) {
             std::cerr << "Error compiling core.cpp" << std::endl;
             return result;
@@ -30,10 +30,28 @@ int main(int argc, char* argv[]){
             return result;
         }
     }
-    else if (command == "version"){
+    else if (command == "update"){
+        int result = std::system("cd C://Projects//gcc && g++ core.cpp utils.cpp branch.cpp -o core.exe");
+        if (result != 0) {
+            std::cerr << "Error compiling core.cpp" << std::endl;
+            return result;
+        }
+        fs::remove(base / "core.exe");
+        fs::copy("C://Projects//gcc//core.exe", base / "core.exe", fs::copy_options::overwrite_existing);
+        std::cout << "core.exe updated successfully!" << std::endl;
+    }
+    else if (command == "version" | command == "branch"){
         if (argc < 3) {
-            std::cerr << "Version number required!" << std::endl;
+            std::cerr << "Version number/branch name required!" << std::endl;
             return 1;
+        }
+        if (command == "branch") {
+            std::string branch_name = argv[2];
+            int result = std::system(("core.exe branch " + branch_name).c_str());
+            if (result != 0) {
+                std::cerr << "Error executing command: branch " << branch_name << std::endl;
+                return result;
+            }
         }
         int version = std::stoi(argv[2]);
         int result = std::system(("core.exe version " + std::to_string(version)).c_str());
@@ -47,5 +65,9 @@ int main(int argc, char* argv[]){
             std::cerr << "Error executing command: " << command << std::endl;
             return result;
         }
+    }
+
+    if (command == "dismantle") {
+        fs::remove("core.exe");
     }
 }

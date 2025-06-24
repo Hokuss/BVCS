@@ -254,12 +254,12 @@ void start(){
         cerr << "Error creating hidden directory!" << endl;
         return;
     }
-    ofstream outputfile(".bvcs/cnfg.txt", ios::app | ios::binary);
+    ofstream outputfile(".bvcs/cnfg.bin", ios::app | ios::binary);
     fs::path base = fs::u8path(dirPath.string() + "\\.bvcs");
     outputfile<<"Current Version: -1"<<endl;
     outputfile<<"Current Branch: Main"<<endl;
     outputfile.close();
-    ifstream inputfile(".bvcs/cnfg.txt", ios::binary);
+    ifstream inputfile(".bvcs/cnfg.bin", ios::binary);
     if (!inputfile) {
         cerr << "Error 2!" << endl;
         return;
@@ -267,6 +267,7 @@ void start(){
     fs::create_directory(base/"current_commit");
     fs::create_directory(base/"staging_area");
     fs::create_directory(base/"version_history");
+    fs::create_directory(base/"version_history"/"Main");
     cout<<"Initializing BVCS..."<<endl;
     ofstream outputfile2("ignore.txt");
     if (!outputfile2) {
@@ -480,6 +481,12 @@ int main(int argc, char* argv[]) {
                 }
             } else {
                 cout << "Version command requires a number argument" << endl;
+            }
+        } else if (arg == "branch") {
+            if (i + 1 < argc) {  // Check if next argument exists
+                new_branch(argv[++i]);
+            } else {
+                cout << "Branch command requires a branch name argument" << endl;
             }
         } else {
             cout << "Unknown command: " << arg << endl;
