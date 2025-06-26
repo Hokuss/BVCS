@@ -9,14 +9,55 @@ void config_parser() {
         cerr << "Fatal Error! Configuration Missing. If this is the first time the project is using the BVCS. Please use 'Start' command." << endl;
         return; // Return an error code
     }
-    inputfile.seekg(17);
-    inputfile >> version;
-    inputfile.seekg(36);
-    getline(inputfile, branch);
-    if (branch.empty()) {
-        cerr << "Fatal Error! Branch name missing in configuration." << endl;
-        return; // Return an error code
+    
+    std::string line;
+    
+    // --- Parse Version ---
+    if (std::getline(inputfile, line)) {
+        // Find the colon, then extract the number after it.
+        size_t colon_pos = line.find(':');
+        if (colon_pos != std::string::npos) {
+            try {
+                // Substring from the character after the colon and space
+                version = std::stoi(line.substr(colon_pos + 2));
+            } catch (const std::invalid_argument& ia) {
+                std::cerr << "Fatal Error! Invalid version number in configuration." << std::endl;
+                inputfile.close();
+                return;
+            }
+        } else {
+            std::cerr << "Fatal Error! Version line malformed in configuration." << std::endl;
+            inputfile.close();
+            return;
+        }
+    } else {
+        std::cerr << "Fatal Error! Configuration file is empty or corrupted." << std::endl;
+        inputfile.close();
+        return;
     }
+
+    // --- Parse Branch ---
+    if (std::getline(inputfile, line)) {
+        size_t colon_pos = line.find(':');
+        if (colon_pos != std::string::npos) {
+            // Substring from the character after the colon and space
+            branch = line.substr(colon_pos + 2);
+        } else {
+             std::cerr << "Fatal Error! Branch line malformed in configuration." << std::endl;
+             inputfile.close();
+             return;
+        }
+    } else {
+        std::cerr << "Fatal Error! Branch name missing in configuration." << std::endl;
+        inputfile.close();
+        return;
+    }
+
+    if (branch.empty()) {
+        std::cerr << "Fatal Error! Branch name missing in configuration." << std::endl;
+        // The return is handled by the check above, but this is a good safeguard.
+    }
+
     inputfile.close();
 }
 
@@ -156,6 +197,9 @@ void versioning(){
         return; // Return an error code
     }
     cc_builder(version, branch);
+
+    fs::remove_all(staging_area);
+    fs::create_directory(staging_area);
 }
 
 // void merger(const string& branch_name) {
