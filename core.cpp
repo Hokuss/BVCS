@@ -474,11 +474,8 @@ int main(int argc, char* argv[]) {
             versioning();
         } else if (arg == "version") {
              if (i + 1 < argc) {  // Check if next argument exists
-                try {
-                    cc_builder(stoi(argv[++i]));
-                } catch (const std::exception& e) {
-                    cout << "Invalid version number: " << argv[i] << endl;
-                }
+                cc_builder(stoi(argv[++i]));
+                
             } else {
                 cout << "Version command requires a number argument" << endl;
             }

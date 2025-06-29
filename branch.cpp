@@ -1,4 +1,5 @@
 #include "branch.hpp"
+#include "utils.hpp"
 
 int version;
 string branch;
@@ -109,10 +110,26 @@ void recursive_copy(const string& branch_name, int version, long long remain) {
         return; // No files to process
     }
     fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch_name;
+    if (!fs::exists(version_history)) {
+        cerr << "Error: Version history for branch '" << branch_name << "' does not exist." << endl;
+        return; // Return an error code
+    }
     fs::path target_path = version_history / to_string(version);
     if(version == 0 && branch_name == "main") {
         fs::path current_commit = fs::current_path() / ".bvcs" / "current_commit";
-        fs::copy (fs::current_path() / ".bvcs" / "version_history" / branch_name / to_string(version), current_commit, fs::copy_options::recursive | fs::copy_options::skip_existing);
+
+        if (!fs::exists(current_commit)) {
+            cerr << "Fatal Error! Current commit directory does not exist." << endl;
+            return; // Return an error code
+        }
+        if (!fs::exists(target_path)) {
+            cerr << "Error: Version 0 does not exist for branch '" << branch_name << "'." << endl;
+            return; // Return an error code
+        }
+
+        cout<< "Copying version 0 of branch '" << branch_name << "' to current commit." << endl;
+        copy (target_path, current_commit, copy_options::Recursive);
+        cout << "Version 0 copied successfully." << endl;
         return; // Base case for recursion
     }
     else if (version == 0) {
@@ -155,10 +172,10 @@ void cc_builder(int version,const string& branch_name) {
         cerr << "Error: Version history for branch '" << branch_name << "' does not exist." << endl;
         return; // Return an error code
     }
-    fs::copy(version_history / to_string(version), current_commit, fs::copy_options::recursive);
+    copy(version_history / to_string(version), current_commit, copy_options::Recursive);
     fs::path dir_json_path = current_commit / "dir.json";
     long long total_files = fs::file_size(dir_json_path)/130;
-    long long i = counter(current_commit) - total_files;
+    long long i = total_files - counter(current_commit);
     if(i==0){
         return; // No files to process
     }
@@ -174,7 +191,7 @@ void versioning(){
     fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch;
     if (!fs::exists(version_history)) {
         cerr<< "Branch not found! Error x1" <<endl;
-        cout << branch << endl;
+        cout << version_history << endl;
         return;
     }
     fs::directory_iterator dir_iter(staging_area);

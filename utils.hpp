@@ -7,10 +7,37 @@
 #include <sstream>
 #include <iomanip>
 #include <iostream>
+#include <filesystem>
 using namespace std;
+namespace fs = std::filesystem;
+
+enum class copy_options : uint8_t {
+    None = 0,
+    Overwrite = 1 << 1,
+    Recursive = 1 << 2
+};
+
+inline constexpr copy_options operator|(copy_options a, copy_options b) {
+    using T = std::underlying_type_t<copy_options>;
+    return static_cast<copy_options>(
+        static_cast<T>(a) | static_cast<T>(b)
+    );
+}
+
+inline constexpr copy_options operator&(copy_options a, copy_options b) {
+    using T = std::underlying_type_t<copy_options>;
+    return static_cast<copy_options>(
+        static_cast<T>(a) & static_cast<T>(b)
+    );
+}
+
+inline constexpr copy_options& operator|=(copy_options& a, copy_options b) {
+    return a = a | b;
+}
 
 string sha256(const string& input);
 vector<uint8_t> lz4Compress(const uint8_t* input, size_t inputSize);
 vector<uint8_t> lz4Decompress(const uint8_t* input, size_t inputSize);
+void copy(const fs::path& source, const fs::path& destination, copy_options options = copy_options::None);
 
 #endif // UTILS_H
