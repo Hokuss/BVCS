@@ -266,3 +266,38 @@ vector<uint8_t> lz4Decompress(const uint8_t* input, size_t inputSize) {
     
     return output;
 }
+
+
+
+void copy(const fs::path& source, const fs::path& destination, copy_options options) {
+    bool overwrite_existing = (options & copy_options::Overwrite) != copy_options::None;
+    bool recursive = (options & copy_options::Recursive) != copy_options::None;
+    if (!fs::exists(source)) {
+        cerr << "Source does not exist: " << source << endl;
+    }
+    
+    if (fs::is_directory(source)) {
+        if (!recursive) {
+            cerr << "Cannot copy directory without recursive option: " << source << endl;
+            return;
+        }
+        if (fs::exists(destination)){
+            if (overwrite_existing) {
+                fs::remove_all(destination); // Remove existing directory if it exists
+            } else {
+                return;
+            }
+        }
+        fs::create_directory(destination);
+        for (const auto& entry : fs::directory_iterator(source)) {
+            copy(entry.path(), destination / entry.path().filename(), options);
+        }
+    } else {
+        if (fs::exists(destination) && !overwrite_existing) {
+            return;
+        }
+        else if (fs::exists(destination)) fs::remove(destination); // Remove existing file if it exists
+        cout << "Copying file from " << source << " to " << destination << endl;
+        fs::copy_file(source, destination);
+    }
+}
