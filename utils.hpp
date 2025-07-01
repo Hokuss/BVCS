@@ -13,8 +13,10 @@ namespace fs = std::filesystem;
 
 enum class copy_options : uint8_t {
     None = 0,
-    Overwrite = 1 << 1,
-    Recursive = 1 << 2
+    Recursive = 1 << 1,
+    Overwrite_existing = 1 << 2,
+    Overwrite_inner = 1 << 3,
+    Skip_inner = 1 << 4
 };
 
 inline constexpr copy_options operator|(copy_options a, copy_options b) {
