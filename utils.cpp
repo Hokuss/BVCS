@@ -270,34 +270,38 @@ vector<uint8_t> lz4Decompress(const uint8_t* input, size_t inputSize) {
 
 
 void copy(const fs::path& source, const fs::path& destination, copy_options options) {
-    bool overwrite_existing = (options & copy_options::Overwrite) != copy_options::None;
     bool recursive = (options & copy_options::Recursive) != copy_options::None;
+    bool overwrite_existing = (options & copy_options::Overwrite_existing) != copy_options::None;
+    bool overwrite_inner = (options & copy_options::Overwrite_inner) != copy_options::None;
+    bool skip_inner = (options & copy_options::Skip_inner) != copy_options::None;
     if (!fs::exists(source)) {
-        cerr << "Source does not exist: " << source << endl;
+        cerr << "Source path does not exist: " << source.string() << endl;
+        return;
     }
-    
-    if (fs::is_directory(source)) {
-        if (!recursive) {
-            cerr << "Cannot copy directory without recursive option: " << source << endl;
-            return;
-        }
-        if (fs::exists(destination)){
-            if (overwrite_existing) {
-                fs::remove_all(destination); // Remove existing directory if it exists
-            } else {
-                return;
+    if(fs::is_directory(source)) {
+        if (!fs::exists(destination)) {
+            fs::create_directory(destination);
+        } 
+
+        if (!recursive && !overwrite_inner && !skip_inner) return;
+        //  cout << "Copying file: " << source.string() << " to " << destination.string() << endl;
+        for (const auto& entry : fs::directory_iterator(source)) {
+            fs::path destPath = destination / entry.path().filename();
+            if (entry.is_directory()) {
+                copy(entry.path(), destPath, options);
+            } else if (entry.is_regular_file()) {
+                copy(entry.path(), destPath, overwrite_inner ? copy_options::Overwrite_existing : copy_options::None);
             }
         }
-        fs::create_directory(destination);
-        for (const auto& entry : fs::directory_iterator(source)) {
-            copy(entry.path(), destination / entry.path().filename(), options);
-        }
-    } else {
-        if (fs::exists(destination) && !overwrite_existing) {
+    } else if (fs::is_regular_file(source)) {
+        // cout << "Copying file: " << source.string() << " to " << destination.string() << endl;
+        if (fs::exists(destination) && !overwrite_existing && !overwrite_inner) {
+            // cout << "Copying file: " << source.string() << " to " << destination.string() << endl;
             return;
+        } else if (fs::exists(destination) && (overwrite_existing || overwrite_inner)) {
+            // cout << "Copying file: " << source.string() << " to " << destination.string() << endl;
+            fs::remove(destination);
         }
-        else if (fs::exists(destination)) fs::remove(destination); // Remove existing file if it exists
-        cout << "Copying file from " << source << " to " << destination << endl;
         fs::copy_file(source, destination);
     }
 }

@@ -128,7 +128,7 @@ void recursive_copy(const string& branch_name, int version, long long remain) {
         }
 
         cout<< "Copying version 0 of branch '" << branch_name << "' to current commit." << endl;
-        copy (target_path, current_commit, copy_options::Recursive);
+        copy (target_path, current_commit, copy_options::Recursive | copy_options::Skip_inner);
         cout << "Version 0 copied successfully." << endl;
         return; // Base case for recursion
     }
@@ -153,7 +153,7 @@ void recursive_copy(const string& branch_name, int version, long long remain) {
         if (fs::exists(dest_path)) {
             continue; // Skip copying if the file already exists
         }
-        fs::copy(entry.path(), dest_path);
+        copy(entry.path(), dest_path);
         remain--;
         if (remain <= 0) {
             break; // Stop copying if we have reached the limit
