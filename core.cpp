@@ -473,9 +473,10 @@ int main(int argc, char* argv[]) {
         } else if (arg == "next") {
             versioning();
         } else if (arg == "version") {
-             if (i + 1 < argc) {  // Check if next argument exists
-                cc_builder(stoi(argv[++i]));
-                
+             if (i + 2 < argc) {  // Check if next argument exists
+                string branch_name = argv[++i];
+                int version_number = stoi(argv[++i]);
+                cc_builder(version_number, branch_name);
             } else {
                 cout << "Version command requires a number argument" << endl;
             }
