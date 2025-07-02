@@ -84,6 +84,7 @@ long long counter(const fs::path& dir_path) {
 }
 
 void new_branch(const string& branch_name) {
+    config_parser();
     fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch_name;
     if (fs::exists(version_history)) {
         cerr << "Error: Branch '" << branch_name << "' already exists." << endl;
@@ -97,12 +98,13 @@ void new_branch(const string& branch_name) {
         cerr << "Error: Unable to create backup pointer file for new branch." << endl;
         return; // Return an error code
     }
+    // cout<<branch<<" "<<version;
     inputFile << branch << "\n" << version;
     inputFile.close();
     branch = branch_name; // Update the current branch
     version = 0; // Reset version for the new branch
     config_writer(branch_name, version);
-    cout << "New branch '" << branch_name << "' created successfully." << endl;
+    // cout << "New branch '" << branch_name << "' created successfully." << endl;
 }
 
 void recursive_copy(const string& branch_name, int version, long long remain) {
@@ -127,7 +129,7 @@ void recursive_copy(const string& branch_name, int version, long long remain) {
             return; // Return an error code
         }
 
-        cout<< "Copying version 0 of branch '" << branch_name << "' to current commit." << endl;
+        // cout<< "Copying version 0 of branch '" << branch_name << "' to current commit." << endl;
         copy (target_path, current_commit, copy_options::Recursive | copy_options::Skip_inner);
         cout << "Version 0 copied successfully." << endl;
         return; // Base case for recursion
@@ -153,7 +155,7 @@ void recursive_copy(const string& branch_name, int version, long long remain) {
         if (fs::exists(dest_path)) {
             continue; // Skip copying if the file already exists
         }
-        copy(entry.path(), dest_path);
+        copy(entry.path(), dest_path, copy_options::None);
         remain--;
         if (remain <= 0) {
             break; // Stop copying if we have reached the limit
@@ -168,6 +170,7 @@ void cc_builder(int version,const string& branch_name) {
     fs::path current_commit = fs::current_path() / ".bvcs" / "current_commit";
     fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch_name;
     fs::remove_all(current_commit);
+    cout<< "Building current commit for branch '" << branch_name << "' at version " << version << "." << endl;
     if(!fs::exists(version_history)) {
         cerr << "Error: Version history for branch '" << branch_name << "' does not exist." << endl;
         return; // Return an error code
