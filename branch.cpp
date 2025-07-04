@@ -117,7 +117,8 @@ void recursive_copy(const string& branch_name, int version, long long remain) {
         return; // Return an error code
     }
     fs::path target_path = version_history / to_string(version);
-    if(version == 0 && branch_name == "main") {
+    cout<< "Target path: " << target_path <<" "<<remain<< endl;
+    if(version == 0 && branch_name == "Main") {
         fs::path current_commit = fs::current_path() / ".bvcs" / "current_commit";
 
         if (!fs::exists(current_commit)) {
@@ -136,6 +137,11 @@ void recursive_copy(const string& branch_name, int version, long long remain) {
     }
     else if (version == 0) {
         ifstream inputFile(target_path / "bk_ptr.json", ios::binary);
+        cout << target_path / "bk_ptr.json" << endl;
+        if (!fs::exists(target_path / "bk_ptr.json")) {
+            cerr << "Error: Backup pointer file for version 0 does not exist." << endl;
+            return; // Return an error code
+        }
         if (!inputFile.is_open()) {
             cerr << "Error: Unable to open backup pointer file for version 0." << endl;
             return; // Return an error code
@@ -179,6 +185,9 @@ void cc_builder(int version,const string& branch_name) {
     fs::path dir_json_path = current_commit / "dir.json";
     long long total_files = fs::file_size(dir_json_path)/130;
     long long i = total_files - counter(current_commit);
+    cout << "Total files to process: " << i << endl;
+    cout<< counter(current_commit) << " files already present in current commit." << endl;
+    cout << total_files << " files in total." << endl;
     if(i==0){
         return; // No files to process
     }
