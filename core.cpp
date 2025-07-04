@@ -76,7 +76,7 @@ void n_store(const string& filename, const string& path = fs::current_path().str
 }
 
 void n_change(const string& filename, const string& hash, streampos pos, const string& path = fs::current_path().string()){
-    ifstream inputFile(path+'\\'+filename);
+    ifstream inputFile(path+'\\'+filename, ios::binary);
     if (!inputFile.is_open()) {
         cerr << "Error opening file! 0" << endl;
         return; // Return an error code
@@ -84,8 +84,10 @@ void n_change(const string& filename, const string& hash, streampos pos, const s
     stringstream buffer;
     buffer << inputFile.rdbuf(); 
     string fileContent = buffer.str();
+    // cout << "Checking file: " << filename << endl;
+    // cout<< "File Content: " << fileContent << endl;
     string hash1 = sha256(fileContent);
-    cout<<hash1 << "," << hash << endl;
+    // cout<<hash1 << "," << hash << endl;
     if(hash1 == hash){
         return;
     } 
@@ -152,7 +154,7 @@ void checker(const string& filename, const string& path = fs::current_path().str
         string storedHash = line.substr(0, pos);
         if (comp == storedHash){
             found = true;
-            cout << "Line start position: " << lineStart << endl;
+            // cout << "Line start position: " << lineStart << endl;
             n_change(filename, line.substr(pos + 1), lineStart, path);
             break;
         }
