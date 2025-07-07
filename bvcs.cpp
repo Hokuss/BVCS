@@ -15,7 +15,7 @@ int main(int argc, char* argv[]){
     fs::path base = fs::current_path();
 
     if (command == "start"){
-        int result = std::system("cd C://Projects//gcc && g++ core.cpp utils.cpp branch.cpp -o core.exe");
+        int result = std::system("cd C://Projects//gcc && g++ core.cpp utils.cpp branch.cpp json.cpp -o core.exe");
         if (result != 0) {
             std::cerr << "Error compiling core.cpp" << std::endl;
             return result;
@@ -31,7 +31,7 @@ int main(int argc, char* argv[]){
         }
     }
     else if (command == "update"){
-        int result = std::system("cd C://Projects//gcc && g++ core.cpp utils.cpp branch.cpp -o core.exe");
+        int result = std::system("cd C://Projects//gcc && g++ core.cpp utils.cpp branch.cpp json.cpp -o core.exe");
         if (result != 0) {
             std::cerr << "Error compiling core.cpp" << std::endl;
             return result;

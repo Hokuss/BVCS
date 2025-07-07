@@ -9,6 +9,7 @@
 #include <algorithm>
 #include "utils.hpp"
 #include "branch.hpp"
+#include "json.hpp"
 using namespace std;
 namespace fs = std::filesystem;
 
@@ -166,26 +167,19 @@ void checker(const string& filename, const string& path = fs::current_path().str
 }
 
 void folder_struct_store(const string &current_directory,vector<string> &files, vector<string> &directories){
-    ofstream outputfile(".bvcs\\staging_area\\dir_struct", ios::app);
-    if(!outputfile.is_open()){
-        cerr << "Error opening file! 3" << endl;
-        return;
+    ofstream outputfile(".bvcs\\staging_area\\dir_struct.json", ios::app | ios::binary);
+    if (!outputfile) {
+        cerr << "Error opening file for writing! 3" << endl;
+        return; // Return an error code
     }
-    outputfile << current_directory <<"-";
-    for (const string& file : files) {
-        outputfile << file << ",";
-    }
-    outputfile << "-";
-    for (const string& directory : directories) {
-        outputfile << directory << ",";
-    }
-    outputfile << endl;
+    directorydata dirData(current_directory, directories, files);
     outputfile.close();
+    DirectoryManager manager;
+    manager.appendToFile(".bvcs\\staging_area\\dir_struct.json",dirData);
     return;
 }
 
 void file_check(fs::path dirPath){
-
     vector<string> files;
     vector<string> directories;
     vector<fs::path> dir_list;
@@ -403,11 +397,14 @@ void file_create(fs::path basepath){
         }
     }
     inputFile.close();
+    cout<<basepath.filename() << endl;
+    cout<<tokens[0] << endl;
+    cout<<tokens.size() << endl;
     if(basepath.filename() != tokens[0] | tokens.size() != 3){
         cout << "Error: Directory name mismatch!" << endl;
         return;
     }
-    cout<< "Processing line: " << line << endl;
+    // cout<< "Processing line: " << line << endl;
     vector<string> files = splitstring(tokens[1], ',');
     vector<string> directories = splitstring(tokens[2], ',');
     for (const string& file : files) {
