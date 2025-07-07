@@ -176,7 +176,7 @@ void cc_builder(int version,const string& branch_name) {
     fs::path current_commit = fs::current_path() / ".bvcs" / "current_commit";
     fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch_name;
     fs::remove_all(current_commit);
-    cout<< "Building current commit for branch '" << branch_name << "' at version " << version << "." << endl;
+    // cout<< "Building current commit for branch '" << branch_name << "' at version " << version << "." << endl;
     if(!fs::exists(version_history)) {
         cerr << "Error: Version history for branch '" << branch_name << "' does not exist." << endl;
         return; // Return an error code
@@ -185,9 +185,9 @@ void cc_builder(int version,const string& branch_name) {
     fs::path dir_json_path = current_commit / "dir.json";
     long long total_files = fs::file_size(dir_json_path)/130;
     long long i = total_files - counter(current_commit);
-    cout << "Total files to process: " << i << endl;
-    cout<< counter(current_commit) << " files already present in current commit." << endl;
-    cout << total_files << " files in total." << endl;
+    // cout << "Total files to process: " << i << endl;
+    // cout<< counter(current_commit) << " files already present in current commit." << endl;
+    // cout << total_files << " files in total." << endl;
     if(i==0){
         return; // No files to process
     }
