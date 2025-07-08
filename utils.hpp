@@ -41,5 +41,6 @@ string sha256(const string& input);
 vector<uint8_t> lz4Compress(const uint8_t* input, size_t inputSize);
 vector<uint8_t> lz4Decompress(const uint8_t* input, size_t inputSize);
 void copy(const fs::path& source, const fs::path& destination, copy_options options = copy_options::None);
+vector<string> splitstring(const string& str, char delimiter);
 
 #endif // UTILS_H

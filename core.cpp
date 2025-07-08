@@ -370,69 +370,20 @@ void remover(fs::path path, vector<string>& filenames){
     }
 }
 
-vector<string> splitstring(const string& str, char delimiter) {
-    vector<string> tokens;
-    string token;
-    istringstream tokenStream(str);
-    while (getline(tokenStream, token, delimiter)) {
-        tokens.push_back(token);
-    }
-    return tokens;
-}
-
 void file_create(fs::path basepath){
-    fs::path ccpath = fs::current_path() / ".bvcs" / "current_commit"/ "dir_struct";
-    ifstream inputFile(ccpath);
-    if (!inputFile.is_open()) {
-        cerr << "Error opening file! 6" << endl;
+    fs::path ccpath = fs::current_path() / ".bvcs" / "current_commit"/ "dir_struct.json";
+    string path = basepath.string();
+    DirectoryManager manager;
+    if (!manager.readFromFile(ccpath.string())) {
+        cerr << "Error reading directory structure file!" << endl;
         return; // Return an error code
     }
-    string line;
-    vector<string> tokens;
-    while (getline(inputFile, line)) {
-        tokens = splitstring(line, '-');
-        string directory_name = tokens[0];
-        if (directory_name == basepath.filename().string()) {
-            break;
-        }
+    directorydata* curr = manager.findDirectory(path);
+    if (curr == nullptr) {
+        cerr << "Current directory not found in the structure!" << endl;
+        return; // Return an error code
     }
-    inputFile.close();
-    cout<<basepath.filename() << endl;
-    cout<<tokens[0] << endl;
-    cout<<tokens.size() << endl;
-    if(basepath.filename() != tokens[0] | tokens.size() != 3){
-        cout << "Error: Directory name mismatch!" << endl;
-        return;
-    }
-    // cout<< "Processing line: " << line << endl;
-    vector<string> files = splitstring(tokens[1], ',');
-    vector<string> directories = splitstring(tokens[2], ',');
-    for (const string& file : files) {
-        fs::path file_path = basepath / file; 
-        string hashname = sha256(file);
-        fs::path file_path1 = fs::current_path() / ".bvcs" / "current_commit" / (hashname + ".lz4");
-        ifstream inputFile(file_path1, ios::binary);
-        if (!inputFile.is_open()) {
-            cerr << "Error opening file! 7" << endl;
-            return; // Return an error code
-        }
-        stringstream buffer;
-        buffer << inputFile.rdbuf();
-        string fileContent = buffer.str();
-        vector<uint8_t> decompressedData = lz4Decompress(reinterpret_cast<const uint8_t*>(fileContent.data()), fileContent.size());
-        ofstream outputFile(file_path, ios::binary);
-        if (!outputFile) {
-            cerr << "Error opening file for writing!" << endl;
-            return; // Return an error code
-        }
-        outputFile.write(reinterpret_cast<const char*>(decompressedData.data()), decompressedData.size());
-        outputFile.close();
-    }
-    for (const string& directory : directories) {
-        fs::path directory_path = basepath / directory;
-        fs::create_directory(directory_path);
-        file_create(directory_path);
-    }
+    
 
 }
 
