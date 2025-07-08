@@ -305,3 +305,13 @@ void copy(const fs::path& source, const fs::path& destination, copy_options opti
         fs::copy_file(source, destination);
     }
 }
+
+vector<string> splitstring(const string& str, char delimiter) {
+    vector<string> tokens;
+    string token;
+    istringstream tokenStream(str);
+    while (getline(tokenStream, token, delimiter)) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
