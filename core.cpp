@@ -78,13 +78,7 @@ void n_store(const string& filename, const string& path = fs::current_path().str
 
 void n_change(const string& filename, const string& hash, streampos pos, const string& path = fs::current_path().string()){
     ifstream inputFile(path+'\\'+filename, ios::binary);
-    if (!inputFile.is_open()) {
-        cerr << "Error opening file! 0" << endl;
-        return; // Return an error code
-    }
-    stringstream buffer;
-    buffer << inputFile.rdbuf(); 
-    string fileContent = buffer.str();
+    vector<uint8_t> fileContent = readBinaryFile(path+'\\'+filename);
     // cout << "Checking file: " << filename << endl;
     // cout<< "File Content: " << fileContent << endl;
     string hash1 = sha256(fileContent);
@@ -304,12 +298,12 @@ bool change(){
     fs::copy_file(fs::current_path()/".bvcs"/"current_commit"/"dir.json", base/"dir.json");
     file_check(fs::current_path());
     bool flag = false;
-    ifstream inputFile(base.string() + "\\dir_struct");
+    ifstream inputFile(base.string() + "\\dir_struct.json", ios::binary);
     if (!inputFile.is_open()) {
         cerr << "Error opening file! 4" << endl;
         return false; // Return an error code
     }
-    ifstream inputfile(fs::current_path().string() + "\\.bvcs\\current_commit\\dir_struct");
+    ifstream inputfile(fs::current_path().string() + "\\.bvcs\\current_commit\\dir_struct.json", ios::binary);
     if (!inputfile) {
         cerr << "Error opening file! 5" << endl;
         return false; // Return an error code
@@ -331,7 +325,7 @@ bool change(){
     inputfile.close();
     if(flag) return flag;
     for(const fs::directory_entry& file: fs::directory_iterator(base)){
-        if(file.path().filename().string() != "dir_struct" && file.path().filename().string() != "dir.json"){
+        if(file.path().filename().string() != "dir_struct.json" && file.path().filename().string() != "dir.json"){
             flag = true;
             break;
         }
@@ -363,16 +357,40 @@ void remover(fs::path path, vector<string>& filenames){
     for (const fs::directory_entry& entry : fs::directory_iterator(dirPath)) {
         string name = entry.path().filename().string();
         if(find(filenames.begin(), filenames.end(), name) != filenames.end() | find(directory_list.begin(), directory_list.end(), name) != directory_list.end() | find(file_list.begin(), file_list.end(),name) != file_list.end()){
-            cout << "File is in ignore list!" << endl;
+            // cout << "File is in ignore list!" << endl;
             continue;
         }
         fs::remove_all(entry.path());
     }
 }
 
+void file_builder(fs::path basepath, string filename){
+    fs::path filePath = basepath / filename;
+    ofstream file(filePath, ios::binary);
+    if (!file) {
+        cerr << "Error creating file: " << filePath.string() << endl;
+        return; // Return an error code
+    }
+    string hash = sha256(filename);
+    fs::path hashPath = fs::current_path() / ".bvcs" / "current_commit" / (hash + ".lz4");
+    if (!fs::exists(hashPath)){
+        cerr<< "Error: Hash file does not exist: " << hashPath.string() << endl;
+        return; // Return an error code
+    }
+    ifstream hashFile(hashPath, ios::binary);
+    stringstream buffer;
+    buffer << hashFile.rdbuf();
+    string fileContent = buffer.str();
+    vector<uint8_t> decompressedContent = lz4Decompress(reinterpret_cast<const uint8_t*>(fileContent.data()), fileContent.size());
+    file.write(reinterpret_cast<const char*>(decompressedContent.data()), decompressedContent.size());
+    file.close();
+    hashFile.close();
+    cout << "Created file: " << filePath.string() << endl;
+}
+
 void file_create(fs::path basepath){
     fs::path ccpath = fs::current_path() / ".bvcs" / "current_commit"/ "dir_struct.json";
-    string path = basepath.string();
+    string path = basepath.filename().string();
     DirectoryManager manager;
     if (!manager.readFromFile(ccpath.string())) {
         cerr << "Error reading directory structure file!" << endl;
@@ -383,7 +401,27 @@ void file_create(fs::path basepath){
         cerr << "Current directory not found in the structure!" << endl;
         return; // Return an error code
     }
-    
+    vector<string> files = curr->getFiles();
+    vector<string> directories = curr->getDirectories();
+
+    for (const string& file : files) {
+        fs::path filePath = basepath / file;
+        if (!fs::exists(filePath)) {
+            file_builder(basepath, file);
+        }
+    }
+
+    for (const string& dir : directories) {
+        fs::path dirPath = basepath / dir;
+        if (!fs::exists(dirPath)) {
+            if (!fs::create_directory(dirPath)) {
+                cerr << "Error creating directory: " << dirPath.string() << endl;
+            } else {
+                file_create(dirPath); // Recursively create files in the new directory
+            }
+        }
+    }
+    return;
 
 }
 
