@@ -24,6 +24,14 @@ public:
         files.push_back(file);
     }
 
+    std::vector<std::string> getDirectories() const {
+        return directories;
+    }
+
+    std::vector<std::string> getFiles() const {
+        return files;
+    }
+
     std::string toJson() const;
     void display() const;
 

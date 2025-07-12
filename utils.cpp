@@ -49,8 +49,8 @@ uint32_t maj(uint32_t x, uint32_t y, uint32_t z) {
     return (x & y) ^ (x & z) ^ (y & z);
 }
 
-string sha256(const string& input) {
-    vector<uint8_t> message(input.begin(), input.end());
+string sha256(const vector<uint8_t>& input) {
+    vector<uint8_t> message(input);
     uint64_t original_length = message.size() * 8; // Length in bits
 
     // Padding
@@ -102,6 +102,11 @@ string sha256(const string& input) {
         ss << hex << setw(8) << setfill('0') << h[i];
     }
     return ss.str();
+}
+
+string sha256(const string& input) {
+    vector<uint8_t> message(input.begin(), input.end());
+    return sha256(message);
 }
 
 uint32_t hashFunc(const uint8_t* data) {
@@ -314,4 +319,13 @@ vector<string> splitstring(const string& str, char delimiter) {
         tokens.push_back(token);
     }
     return tokens;
+}
+
+vector<uint8_t> readBinaryFile(const string& filepath) {
+    ifstream file(filepath, ios::binary);
+    if (!file) {
+        throw runtime_error("Failed to open file");
+    }
+    return vector<uint8_t>((istreambuf_iterator<char>(file)),
+                            istreambuf_iterator<char>());
 }

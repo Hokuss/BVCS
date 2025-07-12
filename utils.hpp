@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <iostream>
 #include <filesystem>
+#include <fstream>
 using namespace std;
 namespace fs = std::filesystem;
 
@@ -38,9 +39,11 @@ inline constexpr copy_options& operator|=(copy_options& a, copy_options b) {
 }
 
 string sha256(const string& input);
+string sha256(const vector<uint8_t>& input);
 vector<uint8_t> lz4Compress(const uint8_t* input, size_t inputSize);
 vector<uint8_t> lz4Decompress(const uint8_t* input, size_t inputSize);
 void copy(const fs::path& source, const fs::path& destination, copy_options options = copy_options::None);
 vector<string> splitstring(const string& str, char delimiter);
+vector<uint8_t> readBinaryFile(const string& filepath);
 
 #endif // UTILS_H
