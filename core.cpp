@@ -52,19 +52,15 @@ void n_store(const string& filename, const string& path = fs::current_path().str
         cerr << "Error opening file for writing! 10" << endl;
         return; // Return an error code
     }
-    ifstream inputFile(path+'\\'+filename);
-    if (!inputFile.is_open()) {
-        cerr << "Error opening file! 1" << endl;
+    vector<uint8_t> fileContent = readBinaryFile(path+'\\'+filename);
+    if (fileContent.empty()) {
+        cerr << "Error reading file content!" << endl;
         return; // Return an error code
     }
-    stringstream buffer;
-    buffer << inputFile.rdbuf(); 
-    string fileContent = buffer.str();
     string hash = sha256(fileContent);
     string hashname = sha256(filename);
     outputfile << hashname << "," << hash << "\n";
     outputfile.close();
-    inputFile.close();
     vector<uint8_t> compressedData = lz4Compress(reinterpret_cast<const uint8_t*>(fileContent.data()), fileContent.size());
     ofstream compressedFile(".bvcs\\staging_area\\" + hashname + ".lz4", ios::binary);
     if (!compressedFile) {
@@ -373,18 +369,18 @@ void file_builder(fs::path basepath, string filename){
     }
     string hash = sha256(filename);
     fs::path hashPath = fs::current_path() / ".bvcs" / "current_commit" / (hash + ".lz4");
-    if (!fs::exists(hashPath)){
-        cerr<< "Error: Hash file does not exist: " << hashPath.string() << endl;
+    if (!fs::exists(hashPath)) {
+        cerr << "Error: Hash file does not exist: " << hashPath.string() << endl;
         return; // Return an error code
     }
-    ifstream hashFile(hashPath, ios::binary);
-    stringstream buffer;
-    buffer << hashFile.rdbuf();
-    string fileContent = buffer.str();
+    vector<uint8_t> fileContent = readBinaryFile(hashPath.string());
+    if (fileContent.empty()) {
+        cerr << "Error reading file content!" << endl;
+        return; // Return an error code
+    }
     vector<uint8_t> decompressedContent = lz4Decompress(reinterpret_cast<const uint8_t*>(fileContent.data()), fileContent.size());
     file.write(reinterpret_cast<const char*>(decompressedContent.data()), decompressedContent.size());
     file.close();
-    hashFile.close();
     cout << "Created file: " << filePath.string() << endl;
 }
 

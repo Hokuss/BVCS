@@ -230,20 +230,3 @@ void versioning(){
     fs::remove_all(staging_area);
     fs::create_directory(staging_area);
 }
-
-// void merger(const string& branch_name) {
-//     fs::path current_commit = fs::current_path() / ".bvcs" / "current_commit";
-//     fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch_name;
-//     if (!fs::exists(version_history)) {
-//         cerr << "Error: Version history for branch '" << branch_name << "' does not exist." << endl;
-//         return; // Return an error code
-//     }
-//     fs::copy(version_history, current_commit, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
-//     cout << "Merged branch '" << branch_name << "' into current commit successfully." << endl;
-// }
-
-// int main(){
-//     config_parser();
-//     new_branch("test_branch");
-//     return 0;
-// }
