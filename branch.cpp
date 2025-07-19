@@ -230,3 +230,60 @@ void versioning(){
     fs::remove_all(staging_area);
     fs::create_directory(staging_area);
 }
+
+void limited_recursive_copy(fs::path target, fs::path source, int current_version){
+    if (!fs::exists(source)) {
+        cerr << "Source path does not exist: " << source << endl;
+        return; // Return an error code
+    }
+    if (!fs::exists(target)) {
+        fs::create_directories(target);
+    }
+    if(current_version == 0) {
+        return; // Base case for recursion
+    }
+    copy_options options = copy_options::skip_inner;
+    copy(source / current_version, target, options);
+    limited_recursive_copy(target, source, current_version - 1);
+}
+
+
+void branch_merge(){
+    config_parser();
+    fs::path version_history = fs::current_path() / ".bvcs" / "version_history";
+    if (!fs::exists(version_history)) {
+        cerr << "Branch not found! Error x1" << endl;
+        return; // Return an error code
+    }
+    if (version == 0 || branch == "Main") {
+        cerr << "Cannot merge from version 0 or Main." << endl;
+        return; // Return an error code
+    }
+    fs::path bk_ptr_path = version_history / branch / "0" / "bk_ptr.json";
+    if (!fs::exists(bk_ptr_path)) {
+        cerr << "Backup pointer file does not exist for version 0." << endl;
+        return; // Return an error code
+    }
+    ifstream inputFile(bk_ptr_path, ios::binary);
+    if (!inputFile.is_open()) {
+        cerr << "Error: Unable to open backup pointer file for version 0." << endl;
+        return; // Return an error code
+    }
+    string prev_branch;
+    int prev_version;
+    getline(inputFile, prev_branch);
+    inputFile >> prev_version;
+    inputFile.close();
+    cout << "Current Branch: " << branch << ", Version: " << version << endl;
+    cout << "Merging to Branch: " << prev_branch << ", Version: " << prev_version << endl;
+    cout<< "Press \'Y\' to continue merging as next version or any other key to cancel." << endl;
+    if(cin.get() == 'Y'){
+        cout << "Merging..." << endl;
+        fs::path target_path = version_history / prev_branch / to_string(prev_version + 1);
+
+
+    } else {
+        cout << "Merge cancelled." << endl;
+        return; // Return an error code
+    }
+}
