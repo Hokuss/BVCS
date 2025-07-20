@@ -242,8 +242,8 @@ void limited_recursive_copy(fs::path target, fs::path source, int current_versio
     if(current_version == 0) {
         return; // Base case for recursion
     }
-    copy_options options = copy_options::skip_inner;
-    copy(source / current_version, target, options);
+    copy_options options = copy_options::Skip_inner;
+    copy(source / to_string(current_version), target, options);
     limited_recursive_copy(target, source, current_version - 1);
 }
 
@@ -275,15 +275,41 @@ void branch_merge(){
     inputFile >> prev_version;
     inputFile.close();
     cout << "Current Branch: " << branch << ", Version: " << version << endl;
-    cout << "Merging to Branch: " << prev_branch << ", Version: " << prev_version << endl;
+    cout << "Merging to Branch: " << prev_branch << ", Version: " << prev_version + 1 << endl;
     cout<< "Press \'Y\' to continue merging as next version or any other key to cancel." << endl;
     if(cin.get() == 'Y'){
         cout << "Merging..." << endl;
         fs::path target_path = version_history / prev_branch / to_string(prev_version + 1);
-
+        limited_recursive_copy(target_path, version_history / branch, version);
+        config_writer(prev_branch, prev_version + 1);
+        cc_builder(prev_version + 1, prev_branch);
+        // fs::remove_all(version_history / branch / to_string(version));
+        cout << "Merge completed successfully." << endl;
 
     } else {
         cout << "Merge cancelled." << endl;
         return; // Return an error code
     }
+}
+
+void delete_branch(const string& branch_name) {
+    config_parser();
+    if (branch_name == "Main" || branch_name == branch) {
+        cerr << "Error: Cannot delete the "<< branch_name <<" branch." << endl;
+        return; // Return an error code
+    }
+    fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch_name;
+    if (!fs::exists(version_history)) {
+        cerr << "Error: Branch '" << branch_name << "' does not exist." << endl;
+        return; // Return an error code
+    }
+    cout << "Are you sure you want to delete the branch '" << branch_name << "'? This action cannot be undone. (Y/N): ";
+    char confirmation;
+    std::cin >> confirmation;
+    if (confirmation != 'Y' && confirmation != 'y') {
+        cout << "Branch deletion cancelled." << endl;
+        return; // Return an error code
+    }
+    fs::remove_all(version_history);
+    cout << "Branch '" << branch_name << "' deleted successfully." << endl;
 }

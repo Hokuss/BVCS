@@ -18,6 +18,8 @@ void new_branch(const string& branch_name);
 void recursive_copy(const string& branch_name, int version, long long remain);
 void cc_builder(int version,const string& branch_name = "main");
 void versioning();
+void branch_merge();
+void delete_branch(const string& branch_name);
 
 
 #endif // BRANCH_HPP
