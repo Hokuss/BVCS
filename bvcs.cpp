@@ -40,34 +40,33 @@ int main(int argc, char* argv[]){
         fs::copy("C://Projects//gcc//core.exe", base / "core.exe", fs::copy_options::overwrite_existing);
         std::cout << "core.exe updated successfully!" << std::endl;
     }
-    // First, a minor but important fix: use logical OR '||' not bitwise OR '|'.
-    else if (command == "version" || command == "branch") {
+    else if (command == "version" || command == "branch" || command == "delete") {
 
-        if (command == "branch") {
-            // The 'branch' command needs 3 arguments total (argc must be at least 3)
+        if (command == "branch" || command == "delete") {
+            
             if (argc < 3) {
-                std::cerr << "Error: Branch name is required for the 'branch' command." << std::endl;
+                std::cerr << "Error: Branch name is required for the \'" << command <<"\' command." << std::endl;
                 return 1;
             }
             std::string branch_name = argv[2];
-            int result = std::system(("core.exe branch " + branch_name).c_str());
+            int result = std::system(("core.exe "+ command + " " + branch_name).c_str());
             if (result != 0) {
                 std::cerr << "Error executing command: branch " << branch_name << std::endl;
                 return result;
             }
-            // Successfully executed, return 0
+   
             return 0; 
         }
 
         if (command == "version") {
-            // The 'version' command needs 4 arguments total (argc must be at least 4)
+           
             if (argc < 4) {
                 std::cerr << "Error: Branch name and version number are required for the 'version' command." << std::endl;
                 return 1;
             }
-            // Now it's safe to access both argv[2] and argv[3]
+           
             std::string branch_name = argv[2];
-            std::string version_str = argv[3]; // It's safer to convert to string first
+            std::string version_str = argv[3];
             
             try {
                 int version = std::stoi(version_str);

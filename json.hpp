@@ -14,7 +14,7 @@ public:
     std::vector<std::string> files;
 
     directorydata(const std::string& dire = "", std::vector<std::string> dirs = {}, std::vector<std::string> file = {})
-        : current_directory(dire), directories(dirs), files(file) {} // Using initializer list is good practice
+        : current_directory(dire), directories(dirs), files(file) {}
 
     void addDirectory(const std::string& dir) {
         directories.push_back(dir);

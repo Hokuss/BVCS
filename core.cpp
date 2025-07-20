@@ -198,6 +198,8 @@ void file_check(fs::path dirPath){
     }
     string directory_name = dirPath.filename().string();
     folder_struct_store(directory_name,files, directories);
+
+    cout<< "Files in directory '" << dirPath.string() << "':" << endl;
     for (const string& file : files) {
         checker(file, dirPath.string());
     }
@@ -469,6 +471,14 @@ int main(int argc, char* argv[]) {
                 new_branch(argv[++i]);
             } else {
                 cout << "Branch command requires a branch name argument" << endl;
+            }
+        } else if (arg == "merge") {
+            branch_merge();
+        } else if (arg == "delete") {
+            if (i + 1 < argc) {  // Check if next argument exists
+                delete_branch(argv[++i]);
+            } else {
+                cout << "Delete command requires a branch name argument" << endl;
             }
         } else {
             cout << "Unknown command: " << arg << endl;

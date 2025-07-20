@@ -28,7 +28,7 @@ std::string directorydata::toJson() const {
     json << "{\n";
     json << "  \"current_directory\": \"" << escapeJson(current_directory) << "\",\n";
 
-    json << "  \"directories\": [\n";
+    json << "\"directory\": [\n";
     for (size_t i = 0; i < directories.size(); ++i) {
         json << "    \"" << escapeJson(directories[i]) << "\"";
         if (i < directories.size() - 1) json << ",";
@@ -64,7 +64,7 @@ void directorydata::display() const {
 std::string DirectoryManager::toJson() const {
     std::ostringstream json;
     json << "{\n";
-    json << "  \"directories\": [\n";
+    json << "\"directories\": [\n";
 
     for (size_t i = 0; i < directories.size(); ++i) {
         // Call toJson() on each directorydata object
@@ -126,36 +126,27 @@ void DirectoryManager::displayAll() const {
     }
 }
 
-// Definition of appendToFile()
 bool DirectoryManager::appendToFile(const std::string& filename, const directorydata& dirData) {
-    // Create a temporary manager to read existing data
     DirectoryManager temp_manager;
     if (temp_manager.readFromFile(filename)) {
-        // Clear current directories and add existing ones from the file
-        this->directories.clear(); // Clear current manager's data
+        this->directories.clear(); 
         for (const auto& dir : temp_manager.getDirectories()) {
-            this->directories.push_back(dir); // Add existing directories to THIS manager
+            this->directories.push_back(dir);
         }
     } else {
-        // If file doesn't exist or is empty/invalid, start with an empty manager
         this->directories.clear();
     }
 
-    // Add the new directory data
     this->directories.push_back(dirData);
-
-    // Write all data (existing + new) back to the file
     return writeToFile(filename);
 }
 
-// --- Private Helper Functions for JSON Parsing ---
-
-// Definition of parseJson()
 bool DirectoryManager::parseJson(const std::string& json) {
     try {
         directories.clear(); // Clear existing data before parsing new
 
-        // Find the "directories" array
+        // std::cout << "Parsing JSON: " << json << std::endl;
+
         size_t arrayStartPos = json.find("\"directories\":");
         if (arrayStartPos == std::string::npos) {
             std::cerr << "Error: 'directories' array not found in JSON." << std::endl;
@@ -179,8 +170,9 @@ bool DirectoryManager::parseJson(const std::string& json) {
 
         size_t pos = 0;
         while (pos < arrayContent.length()) {
+
             size_t objStart = arrayContent.find("{", pos);
-            if (objStart == std::string::npos) break; // No more objects
+            if (objStart == std::string::npos) break;
 
             size_t objEnd = findMatchingBrace(arrayContent, objStart);
             if (objEnd == std::string::npos) {
@@ -189,6 +181,7 @@ bool DirectoryManager::parseJson(const std::string& json) {
             }
 
             std::string objStr = arrayContent.substr(objStart, objEnd - objStart + 1);
+
             directorydata dirData;
             if (parseDirectoryObject(objStr, dirData)) {
                 directories.push_back(dirData);
@@ -196,9 +189,10 @@ bool DirectoryManager::parseJson(const std::string& json) {
                 std::cerr << "Warning: Failed to parse a directory object." << std::endl;
                 // Continue to try parsing next objects, or return false if strict
             }
+
             pos = objEnd + 1; // Move past the current object
         }
-
+        
         return true;
     } catch (const std::exception& e) {
         std::cerr << "Error parsing JSON: " << e.what() << std::endl;
@@ -217,11 +211,11 @@ bool DirectoryManager::parseDirectoryObject(const std::string& objStr, directory
     }
 
     // Directories array
-    pos = objStr.find("\"directories\":");
+    pos = objStr.find("\"directory\":");
     if (pos != std::string::npos) {
         dirData.directories = extractArrayValues(objStr, pos);
     } else {
-        std::cerr << "Warning: 'directories' array not found in object." << std::endl;
+        std::cerr << "Warning: 'directory' array not found in object." << std::endl;
     }
 
     // Files array
