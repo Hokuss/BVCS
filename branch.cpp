@@ -274,9 +274,9 @@ void branch_merge(){
     getline(inputFile, prev_branch);
     inputFile >> prev_version;
     inputFile.close();
-    cout << "Current Branch: " << branch << ", Version: " << version << endl;
-    cout << "Merging to Branch: " << prev_branch << ", Version: " << prev_version + 1 << endl;
-    cout<< "Press \'Y\' to continue merging as next version or any other key to cancel." << endl;
+    // cout << "Current Branch: " << branch << ", Version: " << version << endl;
+    // cout << "Merging to Branch: " << prev_branch << ", Version: " << prev_version + 1 << endl;
+    // cout<< "Press \'Y\' to continue merging as next version or any other key to cancel." << endl;
     if(cin.get() == 'Y'){
         cout << "Merging..." << endl;
         fs::path target_path = version_history / prev_branch / to_string(prev_version + 1);
