@@ -52,7 +52,7 @@ void n_store(const string& filename, const string& path = fs::current_path().str
         cerr << "Error opening file for writing! 10" << endl;
         return; // Return an error code
     }
-    vector<uint8_t> fileContent = readBinaryFile(path+'\\'+filename);
+    vector<uint8_t> fileContent = readBinaryFile(filename);
     if (fileContent.empty()) {
         cerr << "Error reading file content!" << endl;
         return; // Return an error code
@@ -73,8 +73,8 @@ void n_store(const string& filename, const string& path = fs::current_path().str
 }
 
 void n_change(const string& filename, const string& hash, streampos pos, const string& path = fs::current_path().string()){
-    ifstream inputFile(path+'\\'+filename, ios::binary);
-    vector<uint8_t> fileContent = readBinaryFile(path+'\\'+filename);
+    ifstream inputFile(filename, ios::binary);
+    vector<uint8_t> fileContent = readBinaryFile(filename);
     // cout << "Checking file: " << filename << endl;
     // cout<< "File Content: " << fileContent << endl;
     string hash1 = sha256(fileContent);
@@ -171,6 +171,7 @@ void folder_struct_store(const string &current_directory,vector<string> &files, 
 
 void file_check(fs::path dirPath){
     vector<string> files;
+    vector<string> file_list;
     vector<string> directories;
     vector<fs::path> dir_list;
 
@@ -186,7 +187,8 @@ void file_check(fs::path dirPath){
             if(find(file_list.begin(), file_list.end(), filename) != file_list.end()){
                 continue;
             }
-            files.push_back(filename);
+            files.push_back(entry.path().string());
+            file_list.push_back(filename);
         } else if (entry.is_directory()) {
             string directory_name = entry.path().filename().string();
             if(find(directory_list.begin(), directory_list.end(), directory_name) != directory_list.end()){
@@ -197,7 +199,7 @@ void file_check(fs::path dirPath){
         }
     }
     string directory_name = dirPath.filename().string();
-    folder_struct_store(directory_name,files, directories);
+    folder_struct_store(directory_name,file_list, directories);
 
     cout<< "Files in directory '" << dirPath.string() << "':" << endl;
     for (const string& file : files) {
@@ -369,7 +371,7 @@ void file_builder(fs::path basepath, string filename){
         cerr << "Error creating file: " << filePath.string() << endl;
         return; // Return an error code
     }
-    string hash = sha256(filename);
+    string hash = sha256(basepath.string() + filename);
     fs::path hashPath = fs::current_path() / ".bvcs" / "current_commit" / (hash + ".lz4");
     if (!fs::exists(hashPath)) {
         cerr << "Error: Hash file does not exist: " << hashPath.string() << endl;
