@@ -54,9 +54,10 @@ void n_store(const string& filename, const string& path = fs::current_path().str
     }
     vector<uint8_t> fileContent = readBinaryFile(filename);
     if (fileContent.empty()) {
-        cerr << "Error reading file content!" << endl;
+        cerr << "Error file is Empty!" << endl;
         return; // Return an error code
     }
+    // cout<< "Storing file: " << filename << endl;
     string hash = sha256(fileContent);
     string hashname = sha256(filename);
     outputfile << hashname << "," << hash << "\n";
@@ -171,7 +172,7 @@ void folder_struct_store(const string &current_directory,vector<string> &files, 
 
 void file_check(fs::path dirPath){
     vector<string> files;
-    vector<string> file_list;
+    vector<string> file_stored;
     vector<string> directories;
     vector<fs::path> dir_list;
 
@@ -188,7 +189,7 @@ void file_check(fs::path dirPath){
                 continue;
             }
             files.push_back(entry.path().string());
-            file_list.push_back(filename);
+            file_stored.push_back(filename);
         } else if (entry.is_directory()) {
             string directory_name = entry.path().filename().string();
             if(find(directory_list.begin(), directory_list.end(), directory_name) != directory_list.end()){
@@ -199,9 +200,9 @@ void file_check(fs::path dirPath){
         }
     }
     string directory_name = dirPath.filename().string();
-    folder_struct_store(directory_name,file_list, directories);
+    folder_struct_store(directory_name,file_stored, directories);
 
-    cout<< "Files in directory '" << dirPath.string() << "':" << endl;
+    // cout<< "Files in directory '" << dirPath.string() << "':" << endl;
     for (const string& file : files) {
         checker(file, dirPath.string());
     }
