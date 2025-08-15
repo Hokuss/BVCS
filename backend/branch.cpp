@@ -2,7 +2,7 @@
 #include "utils.hpp"
 
 int version;
-string branch;
+string branch_name;
 
 void config_parser() {
     ifstream inputfile(".bvcs/cnfg.bin", ios::binary);
@@ -37,39 +37,39 @@ void config_parser() {
         return;
     }
 
-    // --- Parse Branch ---
+    // --- Parse Branch_name ---
     if (std::getline(inputfile, line)) {
         size_t colon_pos = line.find(':');
         if (colon_pos != std::string::npos) {
             // Substring from the character after the colon and space
-            branch = line.substr(colon_pos + 2);
+            branch_name = line.substr(colon_pos + 2);
         } else {
-             std::cerr << "Fatal Error! Branch line malformed in configuration." << std::endl;
+             std::cerr << "Fatal Error! Branch_name line malformed in configuration." << std::endl;
              inputfile.close();
              return;
         }
     } else {
-        std::cerr << "Fatal Error! Branch name missing in configuration." << std::endl;
+        std::cerr << "Fatal Error! Branch_name name missing in configuration." << std::endl;
         inputfile.close();
         return;
     }
 
-    if (branch.empty()) {
-        std::cerr << "Fatal Error! Branch name missing in configuration." << std::endl;
+    if (branch_name.empty()) {
+        std::cerr << "Fatal Error! Branch_name name missing in configuration." << std::endl;
         // The return is handled by the check above, but this is a good safeguard.
     }
 
     inputfile.close();
 }
 
-void config_writer(const string& branch_name, int version) {
+void config_writer(const string& branch, int version) {
     ofstream outputfile(".bvcs/cnfg.bin", ios::trunc | ios::binary);
     if (!outputfile) {
         cerr << "Error opening file for writing!" << endl;
         return; // Return an error code
     }
     outputfile << "Current Version: " << version << endl;
-    outputfile << "Current Branch: " << branch_name << endl;
+    outputfile << "Current Branch: " << branch << endl;
     outputfile.close();
 }
 
@@ -83,14 +83,14 @@ long long counter(const fs::path& dir_path) {
     return count-2; // Subtracting 2 for dir.json and dir_struct
 }
 
-void new_branch(const string& branch_name) {
+void new_branch(const string& branch) {
     config_parser();
-    fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch_name;
+    fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch;
     if (fs::exists(version_history)) {
-        cerr << "Error: Branch '" << branch_name << "' already exists." << endl;
+        cerr << "Error: Branch '" << branch << "' already exists." << endl;
         return; // Return an error code
     }
-    fs::path first_commit = fs::current_path() / ".bvcs" / "version_history" / branch_name / "0";
+    fs::path first_commit = fs::current_path() / ".bvcs" / "version_history" / branch / "0";
     fs::create_directory(version_history);
     fs::create_directory(first_commit);
     ofstream inputFile(first_commit / "bk_ptr.json", ios::binary);
@@ -101,24 +101,24 @@ void new_branch(const string& branch_name) {
     // cout<<branch<<" "<<version;
     inputFile << branch << "\n" << version;
     inputFile.close();
-    branch = branch_name; // Update the current branch
+    branch_name = branch; // Update the current branch
     version = 0; // Reset version for the new branch
-    config_writer(branch_name, version);
-    // cout << "New branch '" << branch_name << "' created successfully." << endl;
+    config_writer(branch, version);
+    // cout << "New branch '" << branch << "' created successfully." << endl;
 }
 
-void recursive_copy(const string& branch_name, int version, long long remain) {
+void recursive_copy(const string& branch, int version, long long remain) {
     if (remain <= 0) {
         return; // No files to process
     }
-    fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch_name;
+    fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch;
     if (!fs::exists(version_history)) {
-        cerr << "Error: Version history for branch '" << branch_name << "' does not exist." << endl;
+        cerr << "Error: Version history for branch '" << branch << "' does not exist." << endl;
         return; // Return an error code
     }
     fs::path target_path = version_history / to_string(version);
     cout<< "Target path: " << target_path <<" "<<remain<< endl;
-    if(version == 0 && branch_name == "Main") {
+    if(version == 0 && branch == "Main") {
         fs::path current_commit = fs::current_path() / ".bvcs" / "current_commit";
 
         if (!fs::exists(current_commit)) {
@@ -126,11 +126,11 @@ void recursive_copy(const string& branch_name, int version, long long remain) {
             return; // Return an error code
         }
         if (!fs::exists(target_path)) {
-            cerr << "Error: Version 0 does not exist for branch '" << branch_name << "'." << endl;
+            cerr << "Error: Version 0 does not exist for branch '" << branch << "'." << endl;
             return; // Return an error code
         }
 
-        // cout<< "Copying version 0 of branch '" << branch_name << "' to current commit." << endl;
+        // cout<< "Copying version 0 of branch '" << branch << "' to current commit." << endl;
         copy (target_path, current_commit, copy_options::Recursive | copy_options::Skip_inner);
         cout << "Version 0 copied successfully." << endl;
         return; // Base case for recursion
@@ -168,17 +168,17 @@ void recursive_copy(const string& branch_name, int version, long long remain) {
         }
     }
     if(remain > 0){
-        recursive_copy(branch_name, version - 1, remain);
+        recursive_copy(branch, version - 1, remain);
     }
 }
 
-void cc_builder(int version,const string& branch_name) {
+void cc_builder(int version,const string& branch) {
     fs::path current_commit = fs::current_path() / ".bvcs" / "current_commit";
-    fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch_name;
+    fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch;
     fs::remove_all(current_commit);
-    // cout<< "Building current commit for branch '" << branch_name << "' at version " << version << "." << endl;
+    // cout<< "Building current commit for branch '" << branch << "' at version " << version << "." << endl;
     if(!fs::exists(version_history)) {
-        cerr << "Error: Version history for branch '" << branch_name << "' does not exist." << endl;
+        cerr << "Error: Version history for branch '" << branch << "' does not exist." << endl;
         return; // Return an error code
     }
     copy(version_history / to_string(version), current_commit, copy_options::Recursive);
@@ -192,7 +192,7 @@ void cc_builder(int version,const string& branch_name) {
         return; // No files to process
     }
     int j = version-1;
-    recursive_copy(branch_name, j, i);
+    recursive_copy(branch, j, i);
     return;
 }
 
@@ -200,7 +200,7 @@ void versioning(){
     config_parser();
     fs::path current_commit = fs::current_path() / ".bvcs" / "current_commit";
     fs::path staging_area = fs::current_path() / ".bvcs" / "staging_area";
-    fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch;
+    fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch_name;
     if (!fs::exists(version_history)) {
         cerr<< "Branch not found! Error x1" <<endl;
         cout << version_history << endl;
@@ -214,7 +214,7 @@ void versioning(){
 
     fs::path version_path = version_history / to_string(++version);
     fs::copy(staging_area, version_path, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
-    config_writer(branch, version);
+    config_writer(branch_name, version);
     
     if (!fs::exists(current_commit)) {
         cerr << "Fatal Error! Current commit directory does not exist." << endl;
@@ -225,7 +225,7 @@ void versioning(){
         cerr << "Fatal Error! Staging area directory does not exist." << endl;
         return; // Return an error code
     }
-    cc_builder(version, branch);
+    cc_builder(version, branch_name);
 
     fs::remove_all(staging_area);
     fs::create_directory(staging_area);
@@ -255,11 +255,11 @@ void branch_merge(){
         cerr << "Branch not found! Error x1" << endl;
         return; // Return an error code
     }
-    if (version == 0 || branch == "Main") {
+    if (version == 0 || branch_name == "Main") {
         cerr << "Cannot merge from version 0 or Main." << endl;
         return; // Return an error code
     }
-    fs::path bk_ptr_path = version_history / branch / "0" / "bk_ptr.json";
+    fs::path bk_ptr_path = version_history / branch_name / "0" / "bk_ptr.json";
     if (!fs::exists(bk_ptr_path)) {
         cerr << "Backup pointer file does not exist for version 0." << endl;
         return; // Return an error code
@@ -280,7 +280,7 @@ void branch_merge(){
     if(cin.get() == 'Y'){
         cout << "Merging..." << endl;
         fs::path target_path = version_history / prev_branch / to_string(prev_version + 1);
-        limited_recursive_copy(target_path, version_history / branch, version);
+        limited_recursive_copy(target_path, version_history / branch_name, version);
         config_writer(prev_branch, prev_version + 1);
         cc_builder(prev_version + 1, prev_branch);
         // fs::remove_all(version_history / branch / to_string(version));
@@ -292,18 +292,18 @@ void branch_merge(){
     }
 }
 
-void delete_branch(const string& branch_name) {
+void delete_branch(const string& branch) {
     config_parser();
-    if (branch_name == "Main" || branch_name == branch) {
-        cerr << "Error: Cannot delete the "<< branch_name <<" branch." << endl;
+    if (branch == "Main" || branch == branch) {
+        cerr << "Error: Cannot delete the "<< branch <<" branch." << endl;
         return; // Return an error code
     }
-    fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch_name;
+    fs::path version_history = fs::current_path() / ".bvcs" / "version_history" / branch;
     if (!fs::exists(version_history)) {
-        cerr << "Error: Branch '" << branch_name << "' does not exist." << endl;
+        cerr << "Error: Branch '" << branch << "' does not exist." << endl;
         return; // Return an error code
     }
-    cout << "Are you sure you want to delete the branch '" << branch_name << "'? This action cannot be undone. (Y/N): ";
+    cout << "Are you sure you want to delete the branch '" << branch << "'? This action cannot be undone. (Y/N): ";
     char confirmation;
     std::cin >> confirmation;
     if (confirmation != 'Y' && confirmation != 'y') {
@@ -311,5 +311,5 @@ void delete_branch(const string& branch_name) {
         return; // Return an error code
     }
     fs::remove_all(version_history);
-    cout << "Branch '" << branch_name << "' deleted successfully." << endl;
+    cout << "Branch '" << branch << "' deleted successfully." << endl;
 }

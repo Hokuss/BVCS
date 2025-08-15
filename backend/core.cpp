@@ -1,15 +1,5 @@
-#include <fstream>
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <iomanip>
-#include <vector>
-#include <cstdint>
-#include <filesystem> 
-#include <algorithm>
-#include "utils.hpp"
-#include "branch.hpp"
-#include "json.hpp"
+#include "core.hpp"
+
 using namespace std;
 namespace fs = std::filesystem;
 
@@ -235,7 +225,7 @@ bool createHiddenDirectory(const std::string& dirName) {
     }
 }
 
-void start(){
+void begin(){
     fs::path dirPath = fs::current_path(); 
     if(fs::exists(".bvcs")){
         cout << "BVCS already initialized!" << endl;
@@ -276,23 +266,24 @@ void start(){
     outputfile2.close();
     cout<< "Please add files/directories to the ignore list in 'ignore.txt' file!" << endl;
     cout<< "Then press 'Start' to start staging!" << endl;
-    if(cin.get() == '\n'){
+    // if(cin.get() == '\n'){
         cout<< "Starting to stage the current project..." << endl;
         starter_function();
         ofstream outputfile1(".bvcs/current_commit/dir.json", ios::app);
         outputfile1.close();
         file_check(dirPath);
-        return;
-    }
-    else{
-        cout<< "BVCS not started!" << endl;
-        return;
-    }
+    //     return;
+    // }
+    // else{
+    //     cout<< "BVCS not started!" << endl;
+    //     return;
+    // }
     inputfile.close();
     return;
 }
 
 bool change(){
+    starter_function();
     fs::path base = fs::current_path() / ".bvcs"/"staging_area";
     fs::remove_all(base);
     fs::create_directory(base);
@@ -442,51 +433,51 @@ void dismantle(){
     cout << "BVCS dismantled!" << endl;
 }
 
-int main(int argc, char* argv[]) {
-    starter_function();
-    if (argc < 2) {
-        return 1;
-    }
-    for (int i = 1; i < argc; ++i) {
-        string arg = argv[i];
-        if (arg == "start") {
-            start(); // Has to modify to include a few things
-        } else if (arg == "versioning") {
-            versioning();
-        } else if (arg == "change") {
-            change_upp();
-        } else if (arg == "dismantle") {
-            dismantle();
-        } else if (arg == "fetch") {
-            cc_fetch();
-        } else if (arg == "next") {
-            versioning();
-        } else if (arg == "version") {
-             if (i + 2 < argc) {  // Check if next argument exists
-                string branch_name = argv[++i];
-                int version_number = stoi(argv[++i]);
-                cc_builder(version_number, branch_name);
-            } else {
-                cout << "Version command requires a number argument" << endl;
-            }
-        } else if (arg == "branch") {
-            if (i + 1 < argc) {  // Check if next argument exists
-                new_branch(argv[++i]);
-            } else {
-                cout << "Branch command requires a branch name argument" << endl;
-            }
-        } else if (arg == "merge") {
-            branch_merge();
-        } else if (arg == "delete") {
-            if (i + 1 < argc) {  // Check if next argument exists
-                delete_branch(argv[++i]);
-            } else {
-                cout << "Delete command requires a branch name argument" << endl;
-            }
-        } else {
-            cout << "Unknown command: " << arg << endl;
-        }
-    }
-    return 0;
-}
+// int main(int argc, char* argv[]) {
+//     starter_function();
+//     if (argc < 2) {
+//         return 1;
+//     }
+//     for (int i = 1; i < argc; ++i) {
+//         string arg = argv[i];
+//         if (arg == "start") {
+//             start(); // Has to modify to include a few things
+//         } else if (arg == "versioning") {
+//             versioning();
+//         } else if (arg == "change") {
+//             change_upp();
+//         } else if (arg == "dismantle") {
+//             dismantle();
+//         } else if (arg == "fetch") {
+//             cc_fetch();
+//         } else if (arg == "next") {
+//             versioning();
+//         } else if (arg == "version") {
+//              if (i + 2 < argc) {  // Check if next argument exists
+//                 string branch_name = argv[++i];
+//                 int version_number = stoi(argv[++i]);
+//                 cc_builder(version_number, branch_name);
+//             } else {
+//                 cout << "Version command requires a number argument" << endl;
+//             }
+//         } else if (arg == "branch") {
+//             if (i + 1 < argc) {  // Check if next argument exists
+//                 new_branch(argv[++i]);
+//             } else {
+//                 cout << "Branch command requires a branch name argument" << endl;
+//             }
+//         } else if (arg == "merge") {
+//             branch_merge();
+//         } else if (arg == "delete") {
+//             if (i + 1 < argc) {  // Check if next argument exists
+//                 delete_branch(argv[++i]);
+//             } else {
+//                 cout << "Delete command requires a branch name argument" << endl;
+//             }
+//         } else {
+//             cout << "Unknown command: " << arg << endl;
+//         }
+//     }
+//     return 0;
+// }
 

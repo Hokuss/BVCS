@@ -9,6 +9,7 @@
 #include <iostream>
 #include <filesystem>
 #include <fstream>
+#include <set>
 using namespace std;
 namespace fs = std::filesystem;
 
@@ -45,5 +46,10 @@ vector<uint8_t> lz4Decompress(const uint8_t* input, size_t inputSize);
 void copy(const fs::path& source, const fs::path& destination, copy_options options = copy_options::None);
 vector<string> splitstring(const string& str, char delimiter);
 vector<uint8_t> readBinaryFile(const string& filepath);
+string readTextFile(const string& filepath);
+string readIgnoreFile();
+vector<string> all_branches();
+vector<string> all_versions(const string &branch_name);
+
 
 #endif // UTILS_H

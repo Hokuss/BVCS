@@ -1,4 +1,5 @@
 #include "utils.hpp"
+#include "connector.hpp"
 
 
 const uint32_t K[64] = {
@@ -329,3 +330,116 @@ vector<uint8_t> readBinaryFile(const string& filepath) {
     return vector<uint8_t>((istreambuf_iterator<char>(file)),
                             istreambuf_iterator<char>());
 }
+
+// bool safetoread(const string& filepath) {
+//     ifstream file(filepath, ios::binary);
+//     if (!file) {
+//         return false;
+//     }
+
+//     char buffer[512];
+//     file.read(buffer, sizeof(buffer));
+//     std::streamsize bytesRead = file.gcount();
+//     if (bytesRead <= 0) {
+//         return false;
+//     }
+
+//     int nonTextChars = 0;
+//     for (std::streamsize i = 0; i < bytesRead; ++i) {
+//         if (buffer[i] < 0x20 && buffer[i] != '\n' && buffer[i] != '\r' && buffer[i] != '\t') {
+//             nonTextChars++;
+//         }
+//     }
+//     if (nonTextChars > bytesRead / 10) { // More than 10% non-text characters
+//         file.close();
+//         return false;
+//     }
+//     file.close();
+//     return true;
+// }
+
+bool isTextFile(const string& filepath) {
+    static const set<string> textExtensions = {
+        ".txt", ".md", ".log", ".ini", ".cfg", ".conf",
+        ".c", ".cpp", ".cc", ".cxx", ".h", ".hpp", ".hh", ".hxx",
+        ".py", ".sh", ".bat", ".ps1", ".lua", ".js", ".ts", ".php", ".rb", ".pl",
+        ".html", ".htm", ".css", ".xml", ".json", ".yml", ".yaml", ".csv",
+        ".cmake", ".mk"
+    };
+    fs::path path(filepath);
+    if(textExtensions.find(path.extension().string()) != textExtensions.end())
+        return true;
+    else return false;
+}
+
+string readTextFile(const string& filepath) {
+    if(!isTextFile(filepath)) {
+        error_occured = true;
+        error_message = "File is not a text file: " + filepath;
+        return "";
+    }
+    ifstream file(filepath, ios::binary);
+    if (!file) {
+        throw runtime_error("Failed to open file");
+    }
+    
+    return string((istreambuf_iterator<char>(file)),
+                   istreambuf_iterator<char>());
+}
+
+string readIgnoreFile() {
+    vector<uint8_t> data = readBinaryFile("ignore.txt");
+    string content(data.begin(), data.end());
+
+    size_t pos = 0;
+    // 1. Replace all Windows-style \r\n with a single \n
+    while ((pos = content.find("\r\n", pos)) != std::string::npos) {
+        content.replace(pos, 2, "\n");
+        pos++;
+    }
+
+    pos = 0;
+    // 2. Replace all Mac-style \r with a single \n
+    while ((pos = content.find('\r', pos)) != std::string::npos) {
+        content.replace(pos, 1, "\n");
+        pos++;
+    }
+    return content;
+}
+
+vector<string> all_branches() {
+    vector<string> branches;
+    fs::path version_history = ".bvcs/version_history";
+    if (!fs::exists(version_history) || !fs::is_directory(version_history)) {
+        cerr << "Version history directory does not exist: " << version_history.string() << endl;
+        return branches;
+    }
+    for (const auto& entry : fs::directory_iterator(version_history)) {
+        if (fs::is_directory(entry.path())) {
+            branches.push_back(entry.path().filename().string());
+        }
+    }
+    
+    return branches;
+}
+
+vector<string> all_versions(const string& branch_name) {
+    vector<string> versions;
+    fs::path branch_path = ".bvcs/version_history/" + branch_name;
+    if (!fs::exists(branch_path) || !fs::is_directory(branch_path)) {
+        error_occured = true;
+        error_message = "Branch does not exist: " + branch_name;
+    }
+    for (const auto& entry : fs::directory_iterator(branch_path)) {
+        if (fs::is_directory(entry.path())) {
+            versions.push_back(entry.path().filename().string());
+        }
+    }
+    if (versions.empty()) {
+        error_occured = true;
+        error_message = "No versions found for branch: " + branch_name;
+    }
+    return versions;
+}
+
+    
