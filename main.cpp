@@ -1,6 +1,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "IconsFontAwesome6.h"
 #include "mainspace.hpp"
 #include <GLFW/glfw3.h>
 #include <iostream>
@@ -26,7 +27,20 @@ int main() {
     // Setup ImGui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGuiIO& io = ImGui::GetIO(); 
+    io.Fonts->AddFontDefault();
+
+    ImFontConfig config;
+    config.MergeMode = true;
+    config.PixelSnapH = true;
+
+    static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_16_FA, 0 };
+
+    io.Fonts->AddFontFromFileTTF("Font Awesome 7 Free-Solid-900.otf", 16.0f, &config, icons_ranges);
+
+    // io.Fonts->Build();
+
+    // (void)io;
 
     ImGui::StyleColorsDark();
 
@@ -39,7 +53,7 @@ int main() {
     // Main loop
     while (!glfwWindowShouldClose(window) && opened) {
 
-        glfwWaitEvents();
+        glfwPollEvents();
 
         // Start ImGui frame
         ImGui_ImplOpenGL3_NewFrame();

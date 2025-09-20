@@ -1,11 +1,14 @@
 #include "mainspace.hpp"
 #include "connector.hpp"
+#include "IconsFontAwesome6.h"
+#include "Soup.hpp"
 
 bool side_menu_opened = true;
 bool main_text = false;
 bool compare_text = false;
 
 static Connector a;
+Soup* main_soup = nullptr;
 static std::unordered_set<void*> selected_items;
 void* last_selected_item = nullptr;
 static void* renaming_item = nullptr;
@@ -58,11 +61,52 @@ void EndRename(FileExplorer* explorer, Directory* parent = nullptr, bool is_file
     if (renaming_item && strlen(rename_buffer) > 0)
     {
         if (is_file)
-            explorer->renameFile(((File*)renaming_item)->name, rename_buffer, parent);
+            explorer->renameFile(((File*)renaming_item)->name, rename_buffer, parent, parent->path);
         else
-            explorer->renameDirectory(((Directory*)renaming_item)->name, rename_buffer, parent);
+            explorer->renameDirectory(((Directory*)renaming_item)->name, rename_buffer, parent, parent->path);
+        explorer->refresh();
     }
     renaming_item = nullptr;
+}
+
+const char* GetFileIcon(const std::string& filename) {
+    std::string ext;
+    size_t dot_pos = filename.find_last_of('.');
+    if (dot_pos != std::string::npos) {
+        ext = filename.substr(dot_pos + 1);
+    }
+    
+    if (ext == "cpp" || ext == "cxx" || ext == "h" || ext == "hpp") {
+        return ICON_FA_FILE_CODE;
+    } else if (ext == "txt" || ext == "md") {
+        return ICON_FA_FILE_LINES;
+    } else if (ext == "jpg" || ext == "png" || ext == "gif") {
+        return ICON_FA_FILE_IMAGE;
+    } else if (ext == "pdf") {
+        return ICON_FA_FILE_PDF;
+    }
+    // Add more conditions for other file types
+    return ICON_FA_FILE;
+}
+
+// Helper function to get the color based on file extension
+ImVec4 GetFileColor(const std::string& filename) {
+    std::string ext;
+    size_t dot_pos = filename.find_last_of('.');
+    if (dot_pos != std::string::npos) {
+        ext = filename.substr(dot_pos + 1);
+    }
+
+    if (ext == "cpp" || ext == "cxx" || ext == "h" || ext == "hpp") {
+        return ImVec4(0.0f, 0.5f, 1.0f, 1.0f); // Blue for C/C++
+    } else if (ext == "txt" || ext == "md") {
+        return ImVec4(0.7f, 0.7f, 0.7f, 1.0f); // Gray for text
+    } else if (ext == "jpg" || ext == "png" || ext == "gif") {
+        return ImVec4(1.0f, 0.3f, 0.8f, 1.0f); // Pink for images
+    } else if (ext == "pdf") {
+        return ImVec4(1.0f, 0.0f, 0.0f, 1.0f); // Red for PDFs
+    }
+    return ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // Default to white
 }
 
 void RenderFile(File* file, Directory* parent, FileExplorer* explorer)
@@ -76,22 +120,24 @@ void RenderFile(File* file, Directory* parent, FileExplorer* explorer)
 
     if (renaming_item == file)
     {
+        ImGui::SetKeyboardFocusHere(0);
         ImGui::SetNextItemWidth(-1);
-        if (ImGui::InputText("##rename_file", rename_buffer, IM_ARRAYSIZE(rename_buffer),
-                             ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll))
-        {
-            EndRename(explorer, parent, true);
-        }
-        if (!ImGui::IsItemActive() && !ImGui::IsItemHovered())
+        bool rename_finished = ImGui::InputText("##rename_file", rename_buffer, IM_ARRAYSIZE(rename_buffer),
+                             ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+        if (rename_finished || ImGui::IsItemDeactivated())
             EndRename(explorer, parent, true);
     }
     else
     {
-        ImGui::TreeNodeEx((void*)file, file_flags, ICON_FILE " %s", file->name.c_str());
+        const char* icon = GetFileIcon(file->name);
+        ImVec4 color = GetFileColor(file->name);
+
+        ImGui::PushStyleColor(ImGuiCol_Text, color);
+        ImGui::TreeNodeEx((void*)file, file_flags,"%s %s", icon, file->name.c_str());
+        ImGui::PopStyleColor();
 
         if (ImGui::IsItemClicked()){
             bool ctrl = ImGui::GetIO().KeyCtrl;
-            bool shift = ImGui::GetIO().KeyShift;
 
             if (ctrl) {
                 if (selected_items.count(file)) {
@@ -101,32 +147,29 @@ void RenderFile(File* file, Directory* parent, FileExplorer* explorer)
                     selected_items.insert(file);
                     last_selected_item = file;
                 }
-            } else if (shift && last_selected_item) {
-                auto it = selected_items.find(last_selected_item);
-                if (it != selected_items.end()) {
-                    selected_items.erase(it);
-                }
-                selected_items.insert(file);
-                last_selected_item = file;
-            } else {
-                selected_items.clear();
-                selected_items.insert(file);
-                last_selected_item = file;
             }
         }
 
         if (ImGui::BeginPopupContextItem())
-        {
-            if (ImGui::MenuItem("Open")){
-                a.loadfile(file->name, parent);
-                main_text = true;
+        {   
+            if(selected_items.size()>=1){
+                if (ImGui::MenuItem("Cut"))
+                    explorer->cutSelected(selected_items);
+                if (ImGui::MenuItem("Copy"))
+                    explorer->copySelected(selected_items);
+                if (ImGui::MenuItem("Delete"))
+                    explorer->removeSelected(selected_items);
             }
-            if (ImGui::MenuItem("Save"))
-                explorer->saveFile(file->name, a.data, parent);
-            if (ImGui::MenuItem("Rename"))
-                BeginRename(file, file->name);
-            if (ImGui::MenuItem("Delete"))
-                explorer->removeFile(file->name, parent);
+            else {
+                if (ImGui::MenuItem("Open")){
+                    a.loadfile(file->name, parent);
+                    main_text = true;
+                }
+                if (ImGui::MenuItem("Rename"))
+                    BeginRename(file, file->name);
+                if (ImGui::MenuItem("Delete"))
+                    explorer->removeFile(file->name, parent, parent->path);
+            }
             ImGui::EndPopup();
         }
     }
@@ -135,35 +178,45 @@ void RenderFile(File* file, Directory* parent, FileExplorer* explorer)
 // Render directories recursively
 void RenderDirectory(Directory* dir, FileExplorer* explorer, Directory* parent = nullptr)
 {
+    if (!dir) return;
     ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow |
                                     ImGuiTreeNodeFlags_OpenOnDoubleClick |
                                     ImGuiTreeNodeFlags_SpanAvailWidth;
 
-    if (last_selected_item == dir)
+    if (selected_items.count(dir))
         node_flags |= ImGuiTreeNodeFlags_Selected;
 
     bool node_open = false;
 
     if (renaming_item == dir)
     {
+        node_open = ImGui::TreeNodeEx((void*)dir, node_flags, "");
+        ImGui::SameLine();
+        ImGui::SetKeyboardFocusHere(0);
         ImGui::SetNextItemWidth(-1);
-        if (ImGui::InputText("##rename_dir", rename_buffer, IM_ARRAYSIZE(rename_buffer),
-                             ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll))
+        bool rename_finished = ImGui::InputText("##rename_dir", rename_buffer, IM_ARRAYSIZE(rename_buffer),
+                             ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+        if (rename_finished || ImGui::IsItemDeactivated())
         {
             EndRename(explorer, parent, false);
         }
-        if (!ImGui::IsItemActive() && !ImGui::IsItemHovered())
-            EndRename(explorer, parent, false);
-
-        node_open = ImGui::TreeNodeEx((void*)dir, node_flags, "");
     }
     else
     {
-        node_open = ImGui::TreeNodeEx((void*)dir, node_flags, ICON_FOLDER " %s", dir->name.c_str());
+        const char* icon = dir->open ? ICON_FA_FOLDER_OPEN : ICON_FA_FOLDER;
+        dir->color = dir->open ? ImVec4(0.0f, 1.0f, 0.0f, 1.0f) : ImVec4(1.0f, 1.0f, 0.5f, 1.0f);
 
-        if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()){
+        ImGui::SetNextItemOpen(dir->open);
+        node_open = ImGui::TreeNodeEx((void*)dir, node_flags, "");
+
+        dir->open = node_open;
+        ImGui::SameLine();
+        ImGui::TextColored(dir->color, icon);
+        ImGui::SameLine();
+        ImGui::TextUnformatted(dir->name.c_str());
+
+        if (ImGui::IsItemClicked()){
             bool ctrl = ImGui::GetIO().KeyCtrl;
-            bool shift = ImGui::GetIO().KeyShift;
 
             if (ctrl) {
                 if (selected_items.count(dir)) {
@@ -173,31 +226,45 @@ void RenderDirectory(Directory* dir, FileExplorer* explorer, Directory* parent =
                     selected_items.insert(dir);
                     last_selected_item = dir;
                 }
-            } else if (shift && last_selected_item) {
-                auto it = selected_items.find(last_selected_item);
-                if (it != selected_items.end()) {
-                    selected_items.erase(it);
-                }
-                selected_items.insert(dir);
-                last_selected_item = dir;
-            } else {
-                selected_items.clear();
-                selected_items.insert(dir);
-                last_selected_item = dir;
             }
         }
-        if (ImGui::BeginPopupContextItem())
+
+        std::string dir_id = "dir_context_menu" + dir->name + std::to_string(reinterpret_cast<uintptr_t>(dir));
+        if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
         {
-            if (ImGui::MenuItem("Add File"))
-                explorer->addFile("new_file.txt", "", dir);
-            if (ImGui::MenuItem("Add Folder"))
-                explorer->addDirectory("New Folder", dir);
-            if (ImGui::MenuItem("Rename"))
-                BeginRename(dir, dir->name);
-            if (ImGui::MenuItem("Delete"))
-                explorer->removeDirectory(dir->name, parent);
+           // Unique ID for each directory
+            ImGui::OpenPopup(dir_id.c_str());
+        }
+
+
+        if (ImGui::BeginPopup(dir_id.c_str()))
+        {
+            if(selected_items.size()>=1){
+                if (ImGui::MenuItem("Cut"))
+                    explorer->cutSelected(selected_items);
+                if (ImGui::MenuItem("Copy"))
+                    explorer->copySelected(selected_items);
+                if (ImGui::MenuItem("Delete"))
+                    explorer->removeSelected(selected_items);
+            }
+            else {
+                if (ImGui::MenuItem("Add File"))
+                    explorer->addFile("new_file.txt", "", dir, dir->path);
+                if (ImGui::MenuItem("Add Folder"))
+                    explorer->addDirectory("New Folder", dir, dir->path);
+                if (ImGui::MenuItem("Rename"))
+                    BeginRename(dir, dir->name);
+                if (ImGui::MenuItem("Delete"))
+                    explorer->removeDirectory(dir->name, parent, parent->path);
+                if (explorer->clipboard_active && ImGui::MenuItem("Paste"))
+                {
+                    explorer->paste(dir);
+                }
+            }
             ImGui::EndPopup();
         }
+        // return;
+
     }
 
     if (node_open)
@@ -214,14 +281,19 @@ void RenderDirectory(Directory* dir, FileExplorer* explorer, Directory* parent =
     }
 }
 
-void ShowFileExplorerSidebar(FileExplorer* explorer)
+void ShowFileExplorerSidebar(FileExplorer* explorer, ImVec2 size = ImVec2(250, 0))
 {
     ImGui::SetNextWindowSize(ImVec2(250, 0), ImGuiCond_FirstUseEver);
-    ImGui::Begin("Explorer", nullptr, ImGuiWindowFlags_NoCollapse);
+    ImGui::BeginChild("FileExplorerSidebar", size, true, ImGuiWindowFlags_MenuBar);
+
+    if(ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsWindowHovered() && !ImGui::IsAnyItemHovered()){
+        selected_items.clear();
+        last_selected_item = nullptr;
+    }
 
     RenderDirectory(&explorer->root_directory, explorer);
 
-    ImGui::End();
+    ImGui::EndChild();
 }
 
 void main_menu() {
@@ -269,57 +341,45 @@ void main_menu() {
             if (ImGui::Button("Next Version")) {
                 a.next();
             }
-            if (ImGui::Button("Ignore Files/Directory")) {
-                a.Ignore();
-                main_text = true;
-            }
 
             if (ImGui::Button("Dismantle")) {
                 a.dsmantle();
             }
+            
+            ShowFileExplorerSidebar(&a.f, ImVec2(side_menu_width, remain_space.y - 10));
 
             ImGui::EndChild();
+
+            
         }
     }
 
     ImGui::SameLine();
 
-    if(main_text && compare_text){
-        ImGui::InputTextMultiline("##MainText", 
-            const_cast<char*>(a.data.c_str()), 
-            a.data.size() + 1,
-            ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeightWithSpacing() * 2), 
-            ImGuiInputTextFlags_CallbackResize, 
-            a.TextEditCallback, 
-            (void*)&a.data);
-    
-    } else if (main_text) {
-        ImGui::BeginChild(a.file_name1.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeightWithSpacing() * 2), true);
-        ImGui::Text("File: %s", a.file_name1.c_str());
-        ImGui::SameLine();
-        if (ImGui::Button("Save & Close")) {
-            a.save(a.file_name1);
-            main_text = false;
+    if (main_text) {
+        if (!main_soup) {
+            try {
+                main_soup = new Soup(a.file_path1 / a.file_name1);
+            } catch (const std::exception& e) {
+                error_message = e.what();
+                error_occured = true;
+                main_text = false;
+                main_soup = nullptr;
+            }
         }
-        ImGui::Separator();
-        ImGui::InputTextMultiline("##MainText", 
-            a.data.data(), 
-            a.data.size() + 1,
-            ImVec2(-1.0f, -1.0f), 
-            ImGuiInputTextFlags_CallbackResize, 
-            a.TextEditCallback, 
-            (void*)&a.data);
-        ImGui::EndChild();
-    } else {
-        ImGui::Text("No Content Selected");
+        else if (main_soup) {
+            if (!main_soup->render()) {
+                delete main_soup;
+                main_soup = nullptr;
+                main_text = false;
+            }
+        }
     }
 
     // if(ImGui::Button("Test")){
     //     f.refresh();
     //     f.show();
     // }
-
-    ShowFileExplorerSidebar(&a.f);
     
 
 }

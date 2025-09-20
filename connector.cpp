@@ -21,43 +21,32 @@ void Connector::next(){
     versioning();
 }
 
-void Connector::Ignore(){
-    data.clear();
-
-    data = readIgnoreFile();
-    if (data.empty()) {
-        std::cerr << "Ignore file is empty or not found." << std::endl;
-        return;
-    }
-    file_name1 = "ignore.txt";
-}
-
 void Connector::dsmantle() {
     dismantle();
 }
 
-int Connector::TextEditCallback(ImGuiInputTextCallbackData* data) {
-    if (data->EventFlag == ImGuiInputTextFlags_CallbackResize) {
-        std::string* str = (std::string*)data->UserData;
-        str->resize(data->BufSize);
-        data->Buf = (char*)str->data();
-    }
-    return 0;
-}
+// int Connector::TextEditCallback(ImGuiInputTextCallbackData* data) {
+//     if (data->EventFlag == ImGuiInputTextFlags_CallbackResize) {
+//         std::string* str = (std::string*)data->UserData;
+//         str->resize(data->BufSize);
+//         data->Buf = (char*)str->data();
+//     }
+//     return 0;
+// }
 
-void Connector::save(std::string file_name) {
-    if (!data.empty()) {
-        std::ofstream file(file_name);
-        if (file.is_open()) {
-            file << data;
-            file.close();
-        } else {
-            std::cerr << "Unable to open file for writing: " << file_name << std::endl;
-        }
-    } else {
-        std::cerr << "No data to save." << std::endl;
-    }
-}
+// void Connector::save(std::string file_name, fs::path file_path) {
+//     if (!data.empty()) {
+//         std::ofstream file(file_path / file_name, std::ios::out | std::ios::trunc);
+//         if (file.is_open()) {
+//             file << data;
+//             file.close();
+//         } else {
+//             std::cerr << "Unable to open file for writing: " << file_name << std::endl;
+//         }
+//     } else {
+//         std::cerr << "No data to save." << std::endl;
+//     }
+// }
 
 void Connector::branches() {
     branch_names.clear();
@@ -75,7 +64,8 @@ void Connector::loadfile(const std::string& file_name, Directory* parent) {
     if (parent == nullptr) {
         parent = &f.root_directory;
     }
-    data = f.loadFile(file_name, parent);
+    // data = f.loadFile(file_name, parent, parent->path);
     file_name1 = file_name;
+    file_path1 = parent->path;
 }
 

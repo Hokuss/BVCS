@@ -46,6 +46,7 @@ vector<uint8_t> lz4Decompress(const uint8_t* input, size_t inputSize);
 void copy(const fs::path& source, const fs::path& destination, copy_options options = copy_options::None);
 vector<string> splitstring(const string& str, char delimiter);
 vector<uint8_t> readBinaryFile(const string& filepath);
+bool isTextFile(const string& filepath);
 string readTextFile(const string& filepath);
 string readIgnoreFile();
 vector<string> all_branches();

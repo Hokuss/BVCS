@@ -3,29 +3,28 @@
 
 FileExplorer::FileExplorer(fs::path path) : root_path(path) {
     root_directory.name = path.filename().string();
-    root_directory.icon = 0;
     refresh();
 }
 
 void FileExplorer::refresh(fs::path path, Directory* dir) {
     if (dir == nullptr) {
         dir = &root_directory;
-    } else {
-        dir->files.clear();
-        dir->subdirectories.clear();
     }
+    dir->files.clear();
+    dir->subdirectories.clear();
 
     for (const auto& entry : fs::directory_iterator(path)) {
         if (fs::is_directory(entry)) {
             Directory* subdir = new Directory();
             subdir->name = entry.path().filename().string();
-            subdir->icon = 0;
+            subdir->path = entry.path();
             dir->subdirectories.push_back(subdir);
             refresh(entry.path(), subdir);
         } else if (fs::is_regular_file(entry)) {
             File* file = new File();
             file->name = entry.path().filename().string();
-            file->icon = 0;
+            file->data = nullptr;
+            file->path = entry.path();
             dir->files.push_back(file);
         }
     }
@@ -38,7 +37,6 @@ void FileExplorer::addFile(const std::string& name, const std::string& content, 
     File* file = new File();
     file->name = name;
     file->data = new std::string(content);
-    file->icon = 0;
     std::ofstream ofs(path / name, std::ios::out | std::ios::trunc);
     if (ofs.is_open()) {
         ofs << content;
@@ -58,7 +56,6 @@ void FileExplorer::addDirectory(const std::string& name, Directory* dir, fs::pat
     }
     Directory* subdir = new Directory();
     subdir->name = name;
-    subdir->icon = 0;
     fs::create_directory(path / name);
     if (!fs::exists(path / name)) {
         error_occured = true;
@@ -66,6 +63,9 @@ void FileExplorer::addDirectory(const std::string& name, Directory* dir, fs::pat
         return;
     }
     dir->subdirectories.push_back(subdir);
+    subdir->path = path / name;
+    // error_occured = true;
+    // error_message = "Directory created: " + path.string() + '/' + name;
 }
 
 void FileExplorer::removeFile(const std::string& name, Directory* dir, fs::path path) {
@@ -75,6 +75,7 @@ void FileExplorer::removeFile(const std::string& name, Directory* dir, fs::path 
     fs::path file_path = path / name;
     if (fs::exists(file_path)) {
         fs::remove(file_path);
+        refresh();
     } else {
         error_occured = true;
         error_message = "File not found: " + file_path.string();
@@ -99,6 +100,7 @@ void FileExplorer::removeDirectory(const std::string& name, Directory* dir, fs::
     fs::path dir_path = path / name;
     if (fs::exists(dir_path)) {
         fs::remove_all(dir_path);
+        refresh();
     } else {
         error_occured = true;
         error_message = "Directory not found: " + dir_path.string();
@@ -156,43 +158,37 @@ void FileExplorer::renameDirectory(const std::string& old_name, const std::strin
     }
 }
 
-void FileExplorer::saveFile(const std::string& name, const std::string& content, Directory* dir, fs::path path) {
-    if (dir == nullptr) {
-        dir = &root_directory;
-    }
-    fs::path file_path = path / name;
-    std::ofstream ofs(file_path, std::ios::out | std::ios::trunc | std::ios::binary);
-    if (ofs.is_open()) {
-        ofs.write(content.data(), content.size());
-        ofs.close();
-    } else {
-        error_occured = true;
-        error_message = "Failed to save file: " + file_path.string();
-        return;
-    }
-}
+// void FileExplorer::saveFile(const std::string& name, const std::string& content, Directory* dir, fs::path path) {
+//     if (dir == nullptr) {
+//         dir = &root_directory;
+//     }
+//     fs::path file_path = path / name;
+//     std::ofstream ofs(file_path, std::ios::out | std::ios::trunc | std::ios::binary);
+//     if (ofs.is_open()) {
+//         ofs.write(content.data(), content.size());
+//         ofs.close();
+//     } else {
+//         error_occured = true;
+//         error_message = "Failed to save file: " + file_path.string();
+//         return;
+//     }
+// }
 
-std::string FileExplorer::loadFile(const std::string& name, Directory* dir, fs::path path) {
-    if (dir == nullptr) {
-        dir = &root_directory;
-    }
-    fs::path file_path = path / name;
-    if (!fs::exists(file_path)) {
-        error_occured = true;
-        error_message = "File not found: " + file_path.string();
-        return "";
-    }
-    std::string data = readTextFile(file_path.string());
-    if (data.empty()) {
-        error_occured = true;
-        error_message = "Failed to read file: " + file_path.string();
-        return "";
-    }
-    return data;
-}
+// std::string FileExplorer::loadFile(const std::string& name, Directory* dir, fs::path path) {
+//     if (dir == nullptr) {
+//         dir = &root_directory;
+//     }
+//     fs::path file_path = path / name;
+//     if (!fs::exists(file_path)) {
+//         error_occured = true;
+//         error_message = "File not found: " + file_path.string();
+//         return "";
+//     }
+//     std::string data = readTextFile(file_path.string());
+//     return data;
+// }
 
 void FileExplorer::show() {
-
     error_message.clear();
     for (const auto& subdir : root_directory.subdirectories) {
         error_message += "Directory: " + subdir->name + "\n";
@@ -205,6 +201,79 @@ void FileExplorer::show() {
 
     error_occured = true;
     
+}
+
+void FileExplorer::cutSelected(std::unordered_set<void*>& selected_items) {
+    clipboard_active = true;
+    clipboard = true;
+    clipboard_files.clear();
+    clipboard_directories.clear();
+    for (void* item_ptr  : selected_items) {
+        item* it = static_cast<item*>(item_ptr);
+        if (File* file = dynamic_cast<File*>(it)) {
+            clipboard_files.push_back(file);
+        } else if (Directory* dir = dynamic_cast<Directory*>(it)) {
+            clipboard_directories.push_back(dir);
+        }
+    }
+}
+
+void FileExplorer::copySelected(std::unordered_set<void*>& selected_items) {
+    clipboard_active = true;
+    clipboard = false;
+    clipboard_files.clear();
+    clipboard_directories.clear();
+    for (void* item_ptr : selected_items) {
+        item* it = static_cast<item*>(item_ptr);
+        if (File* file = dynamic_cast<File*>(it)) {
+            clipboard_files.push_back(file);
+        } else if (Directory* dir = dynamic_cast<Directory*>(it)) {
+            clipboard_directories.push_back(dir);
+        }
+    }
+}
+
+void FileExplorer::paste(void* paste_dir) {
+    item* target_dir = static_cast<item*>(paste_dir);
+    if (Directory* dir = dynamic_cast<Directory*>(target_dir)) {
+        for (File* file : clipboard_files) {
+            copy(file->path, dir->path / file->name, copy_options::Overwrite_existing);
+            if(clipboard) {
+                fs::remove(file->path);
+            }
+        }
+        for (Directory* subdir : clipboard_directories) {
+            copy(subdir->path, dir->path / subdir->name, copy_options::Overwrite_existing | copy_options::Recursive);
+            if(clipboard) {
+                fs::remove_all(subdir->path);
+            }
+        }
+        clipboard_active = false;
+        clipboard_files.clear();
+        clipboard_directories.clear();
+    } else if (File* file = dynamic_cast<File*>(target_dir)) {
+        error_occured = true;
+        error_message = "Cannot paste into a file: " + file->name;
+        return;
+    } else {
+        error_occured = true;
+        error_message = "Invalid paste target.";
+        return;
+    }
+    refresh();
+    
+}
+
+void FileExplorer::removeSelected(std::unordered_set<void*>& selected_items) {
+    for (void* item_ptr : selected_items) {
+        item* it = static_cast<item*>(item_ptr);
+        if (File* file = dynamic_cast<File*>(it)) {
+            fs::remove(file->path);
+        } else if (Directory* dir = dynamic_cast<Directory*>(it)) {
+            fs::remove_all(dir->path);
+        }
+    }
+    refresh();
 }
 
 
