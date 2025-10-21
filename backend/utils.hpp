@@ -10,7 +10,8 @@
 #include <filesystem>
 #include <fstream>
 #include <set>
-using namespace std;
+#include <cstdlib>
+// using namespace std;
 namespace fs = std::filesystem;
 
 enum class copy_options : uint8_t {
@@ -39,18 +40,19 @@ inline constexpr copy_options& operator|=(copy_options& a, copy_options b) {
     return a = a | b;
 }
 
-string sha256(const string& input);
-string sha256(const vector<uint8_t>& input);
-vector<uint8_t> lz4Compress(const uint8_t* input, size_t inputSize);
-vector<uint8_t> lz4Decompress(const uint8_t* input, size_t inputSize);
+std::string sha256(const std::string& input);
+std::string sha256(const std::vector<uint8_t>& input);
+std::vector<uint8_t> lz4Compress(const uint8_t* input, size_t inputSize);
+std::vector<uint8_t> lz4Decompress(const uint8_t* input, size_t inputSize);
 void copy(const fs::path& source, const fs::path& destination, copy_options options = copy_options::None);
-vector<string> splitstring(const string& str, char delimiter);
-vector<uint8_t> readBinaryFile(const string& filepath);
-bool isTextFile(const string& filepath);
-string readTextFile(const string& filepath);
-string readIgnoreFile();
-vector<string> all_branches();
-vector<string> all_versions(const string &branch_name);
+std::vector<std::string> splitstring(const std::string& str, char delimiter);
+std::vector<uint8_t> readBinaryFile(const std::string& filepath);
+bool isTextFile(const std::string& filepath);
+std::string readTextFile(const std::string& filepath);
+std::string readIgnoreFile();
+std::vector<std::string> all_branches();
+std::vector<std::string> all_versions(const std::string &branch_name);
+std::string exec_and_capture_hidden(const std::string& command);
 
 
 #endif // UTILS_H

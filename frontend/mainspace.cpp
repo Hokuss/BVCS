@@ -264,7 +264,6 @@ void RenderDirectory(Directory* dir, FileExplorer* explorer, Directory* parent =
             ImGui::EndPopup();
         }
         // return;
-
     }
 
     if (node_open)

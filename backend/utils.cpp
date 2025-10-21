@@ -50,8 +50,8 @@ uint32_t maj(uint32_t x, uint32_t y, uint32_t z) {
     return (x & y) ^ (x & z) ^ (y & z);
 }
 
-string sha256(const vector<uint8_t>& input) {
-    vector<uint8_t> message(input);
+std::string sha256(const std::vector<uint8_t>& input) {
+    std::vector<uint8_t> message(input);
     uint64_t original_length = message.size() * 8; // Length in bits
 
     // Padding
@@ -66,7 +66,7 @@ string sha256(const vector<uint8_t>& input) {
     }
 
     // Process message in 512-bit chunks
-    vector<uint32_t> words(64);
+    std::vector<uint32_t> words(64);
     uint32_t h[8];
     for (int i = 0; i < 8; i++) {
         h[i] = H[i];
@@ -98,15 +98,15 @@ string sha256(const vector<uint8_t>& input) {
     }
 
     // Convert hash to hexadecimal string
-    stringstream ss;
+    std::stringstream ss;
     for (int i = 0; i < 8; i++) {
-        ss << hex << setw(8) << setfill('0') << h[i];
+        ss << std::hex << std::setw(8) << std::setfill('0') << h[i];
     }
     return ss.str();
 }
 
-string sha256(const string& input) {
-    vector<uint8_t> message(input.begin(), input.end());
+std::string sha256(const std::string& input) {
+    std::vector<uint8_t> message(input.begin(), input.end());
     return sha256(message);
 }
 
@@ -123,7 +123,7 @@ struct Match {
  * Find the best match for the current position in the input
  */
 Match findBestMatch(const uint8_t* input, size_t inputSize, size_t currentPos, 
-                   const vector<uint32_t>& matchesTable) {
+                   const std::vector<uint32_t>& matchesTable) {
     Match match = {0, 0};
     for(const uint32_t& matchPos : matchesTable) {
         if (matchPos >= currentPos || matchPos + MAX_DISTANCE < currentPos) {
@@ -143,14 +143,14 @@ Match findBestMatch(const uint8_t* input, size_t inputSize, size_t currentPos,
     return match;
 }
 
-vector<uint8_t> lz4Compress(const uint8_t* input, size_t inputSize) {
+std::vector<uint8_t> lz4Compress(const uint8_t* input, size_t inputSize) {
     if (!input || inputSize == 0)
         return {};
     
-    vector<uint8_t> output;
+    std::vector<uint8_t> output;
     output.reserve(inputSize); // Worst case: no compression
     // Hash table to store positions of previously seen 4-byte sequences
-    vector<vector<uint32_t>> hashTable(HASH_TABLE_SIZE, vector<uint32_t>());
+    std::vector<std::vector<uint32_t>> hashTable(HASH_TABLE_SIZE, std::vector<uint32_t>());
     
     size_t pos = 0;
     size_t literalStart = 0;
@@ -171,11 +171,11 @@ vector<uint8_t> lz4Compress(const uint8_t* input, size_t inputSize) {
             uint32_t matchOffset = match.offset;
             uint32_t matchLength = match.length;
            
-            vector<uint8_t> literals = {input + literalStart, input + pos};
-            uint8_t token = (min(literalLength,uint32_t(15)) << 4) | min((matchLength - MIN_MATCH_LENGTH),uint32_t(15));
+            std::vector<uint8_t> literals = {input + literalStart, input + pos};
+            uint8_t token = (std::min(literalLength,uint32_t(15)) << 4) | std::min((matchLength - MIN_MATCH_LENGTH),uint32_t(15));
             output.push_back(token);
             if(literalLength >= 15) {
-                literalLength -= min(literalLength,uint32_t(15));
+                literalLength -= std::min(literalLength,uint32_t(15));
                 while (literalLength >= 255) {
                     output.push_back(uint8_t(255));
                     literalLength -= 255;
@@ -188,9 +188,9 @@ vector<uint8_t> lz4Compress(const uint8_t* input, size_t inputSize) {
             output.insert(output.end(), literals.begin(), literals.end());
             output.push_back((matchOffset >> 8) & 0xFF); // High byte of offset
             output.push_back(matchOffset & 0xFF); // Low byte of offset
-            matchLength -= min(matchLength,MIN_MATCH_LENGTH);
+            matchLength -= std::min(matchLength,MIN_MATCH_LENGTH);
             if (matchLength >= 15) {
-                matchLength -= min(matchLength,uint32_t(15));
+                matchLength -= std::min(matchLength,uint32_t(15));
                 while (matchLength >= 255) {
                     output.push_back(uint8_t(255));
                     matchLength -= 255;
@@ -211,10 +211,10 @@ vector<uint8_t> lz4Compress(const uint8_t* input, size_t inputSize) {
     uint32_t remainingLiterals = inputSize - literalStart;
     if (remainingLiterals > 0) {
         uint32_t literalLength = remainingLiterals;
-        uint8_t token = (min(literalLength,uint32_t(15)) << 4) | 0; // No match
+        uint8_t token = (std::min(literalLength,uint32_t(15)) << 4) | 0; // No match
         output.push_back(token);
         if(literalLength >= 15) {
-            literalLength -= min(literalLength,uint32_t(15));
+            literalLength -= std::min(literalLength,uint32_t(15));
             while (literalLength >= 255) {
                 output.push_back(uint8_t(255));
                 literalLength -= 255;
@@ -229,8 +229,8 @@ vector<uint8_t> lz4Compress(const uint8_t* input, size_t inputSize) {
     return output;
 }
 
-vector<uint8_t> lz4Decompress(const uint8_t* input, size_t inputSize) {
-    vector<uint8_t> output;
+std::vector<uint8_t> lz4Decompress(const uint8_t* input, size_t inputSize) {
+    std::vector<uint8_t> output;
     output.reserve(inputSize);
     size_t pos = 0;
     while (pos < inputSize) {
@@ -264,7 +264,7 @@ vector<uint8_t> lz4Decompress(const uint8_t* input, size_t inputSize) {
         size_t matchStart = output.size() - matchOffset;
         size_t matchEnd = matchStart + matchLength;
         if(matchLength>matchOffset){
-            cout<< "Error: Match length exceeds offset!" << endl;
+            std::cout<< "Error: Match length exceeds offset!" << std::endl;
             return output;
         }
         output.insert(output.end(), output.begin() + matchStart, output.begin() + matchEnd);
@@ -281,7 +281,7 @@ void copy(const fs::path& source, const fs::path& destination, copy_options opti
     bool overwrite_inner = (options & copy_options::Overwrite_inner) != copy_options::None;
     bool skip_inner = (options & copy_options::Skip_inner) != copy_options::None;
     if (!fs::exists(source)) {
-        cerr << "Source path does not exist: " << source.string() << endl;
+        std::cerr << "Source path does not exist: " << source.string() << std::endl;
         return;
     }
     if(fs::is_directory(source)) {
@@ -312,23 +312,23 @@ void copy(const fs::path& source, const fs::path& destination, copy_options opti
     }
 }
 
-vector<string> splitstring(const string& str, char delimiter) {
-    vector<string> tokens;
-    string token;
-    istringstream tokenStream(str);
-    while (getline(tokenStream, token, delimiter)) {
+std::vector<std::string> splitstring(const std::string& str, char delimiter) {
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream tokenStream(str);
+    while (std::getline(tokenStream, token, delimiter)) {
         tokens.push_back(token);
     }
     return tokens;
 }
 
-vector<uint8_t> readBinaryFile(const string& filepath) {
-    ifstream file(filepath, ios::binary);
+std::vector<uint8_t> readBinaryFile(const std::string& filepath) {
+    std::ifstream file(filepath, std::ios::binary);
     if (!file) {
-        throw runtime_error("Failed to open file");
+        throw std::runtime_error("Failed to open file");
     }
-    return vector<uint8_t>((istreambuf_iterator<char>(file)),
-                            istreambuf_iterator<char>());
+    return std::vector<uint8_t>((std::istreambuf_iterator<char>(file)),
+                            std::istreambuf_iterator<char>());
 }
 
 // bool safetoread(const string& filepath) {
@@ -358,8 +358,8 @@ vector<uint8_t> readBinaryFile(const string& filepath) {
 //     return true;
 // }
 
-bool isTextFile(const string& filepath) {
-    static const set<string> textExtensions = {
+bool isTextFile(const std::string& filepath) {
+    static const std::set<std::string> textExtensions = {
         ".txt", ".md", ".log", ".ini", ".cfg", ".conf",
         ".c", ".cpp", ".cc", ".cxx", ".h", ".hpp", ".hh", ".hxx",
         ".py", ".sh", ".bat", ".ps1", ".lua", ".js", ".ts", ".php", ".rb", ".pl",
@@ -372,24 +372,24 @@ bool isTextFile(const string& filepath) {
     else return false;
 }
 
-string readTextFile(const string& filepath) {
+std::string readTextFile(const std::string& filepath) {
     if(!isTextFile(filepath)) {
         error_occured = true;
         error_message = "File is not a text file: " + filepath;
         return "";
     }
-    ifstream file(filepath, ios::binary);
+    std::ifstream file(filepath, std::ios::binary);
     if (!file) {
-        throw runtime_error("Failed to open file");
+        throw std::runtime_error("Failed to open file");
     }
     
-    return string((istreambuf_iterator<char>(file)),
-                   istreambuf_iterator<char>());
+    return std::string((std::istreambuf_iterator<char>(file)),
+                   std::istreambuf_iterator<char>());
 }
 
-string readIgnoreFile() {
-    vector<uint8_t> data = readBinaryFile("ignore.txt");
-    string content(data.begin(), data.end());
+std::string readIgnoreFile() {
+    std::vector<uint8_t> data = readBinaryFile("ignore.txt");
+    std::string content(data.begin(), data.end());
 
     size_t pos = 0;
     // 1. Replace all Windows-style \r\n with a single \n
@@ -407,11 +407,11 @@ string readIgnoreFile() {
     return content;
 }
 
-vector<string> all_branches() {
-    vector<string> branches;
+std::vector<std::string> all_branches() {
+    std::vector<std::string> branches;
     fs::path version_history = ".bvcs/version_history";
     if (!fs::exists(version_history) || !fs::is_directory(version_history)) {
-        cerr << "Version history directory does not exist: " << version_history.string() << endl;
+        std::cerr << "Version history directory does not exist: " << version_history.string() << std::endl;
         return branches;
     }
     for (const auto& entry : fs::directory_iterator(version_history)) {
@@ -423,8 +423,8 @@ vector<string> all_branches() {
     return branches;
 }
 
-vector<string> all_versions(const string& branch_name) {
-    vector<string> versions;
+std::vector<std::string> all_versions(const std::string& branch_name) {
+    std::vector<std::string> versions;
     fs::path branch_path = ".bvcs/version_history/" + branch_name;
     if (!fs::exists(branch_path) || !fs::is_directory(branch_path)) {
         error_occured = true;
@@ -442,4 +442,92 @@ vector<string> all_versions(const string& branch_name) {
     return versions;
 }
 
+#include <windows.h>
+std::string exec_and_capture_hidden(const std::string& command) {
+    HANDLE g_hChildStd_OUT_Rd = NULL;
+    HANDLE g_hChildStd_OUT_Wr = NULL;
     
+    // 1. Create a non-inheritable pipe for reading the child's STDOUT
+    SECURITY_ATTRIBUTES saAttr; 
+    saAttr.nLength = sizeof(SECURITY_ATTRIBUTES); 
+    saAttr.bInheritHandle = TRUE; // Must be inheritable for the child process
+    saAttr.lpSecurityDescriptor = NULL; 
+
+    if (!CreatePipe(&g_hChildStd_OUT_Rd, &g_hChildStd_OUT_Wr, &saAttr, 0)) {
+        throw std::runtime_error("Failed to create pipe.");
+    }
+
+    // Ensure the read handle to the pipe is not inherited by the child process.
+    if (!SetHandleInformation(g_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0)) {
+        throw std::runtime_error("Failed to set handle info.");
+    }
+    
+    // 2. Setup the STARTUPINFO structure
+    STARTUPINFOW si;
+    PROCESS_INFORMATION pi;
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    
+    // --- KEY PART FOR HIDING THE WINDOW ---
+    si.dwFlags |= STARTF_USESTDHANDLES | CREATE_NO_WINDOW;
+    
+    // Redirect child's stdout/stderr to the write end of our pipe
+    si.hStdOutput = g_hChildStd_OUT_Wr;
+    si.hStdError  = g_hChildStd_OUT_Wr; // Capture stderr (errors) as well!
+    
+    ZeroMemory(&pi, sizeof(pi));
+
+    std::vector<wchar_t> wide_command(command.begin(), command.end());
+    wide_command.push_back(L'\0'); // Null-terminate the wide string
+
+    // Convert std::string command to a mutable C-style string buffer required by CreateProcess
+    // Since CreateProcess modifies the buffer, we use a vector.
+    // std::vector<char> cmd_buffer(command.begin(), command.end());
+    // cmd_buffer.push_back('\0'); // Null-terminate the string
+
+    // 3. Create the process
+    BOOL success = CreateProcessW(
+        NULL,             // Application name (NULL to use command line)
+        wide_command.data(),// Command line (must be mutable)
+        NULL,             // Process handle not inheritable
+        NULL,             // Thread handle not inheritable
+        TRUE,             // Set to TRUE to inherit pipe handles!
+        CREATE_NO_WINDOW, // --- KEY FLAG: Prevents console window ---
+        NULL,             // Use parent's environment block
+        NULL,             // Use parent's starting directory
+        &si,              // Pointer to STARTUPINFO structure
+        &pi               // Pointer to PROCESS_INFORMATION structure
+    );
+
+    // Close the write handle immediately since the child process has a copy
+    CloseHandle(g_hChildStd_OUT_Wr);
+
+    if (!success) {
+        CloseHandle(g_hChildStd_OUT_Rd);
+        throw std::runtime_error("CreateProcess failed.");
+    }
+
+    // 4. Wait for the process to finish
+    WaitForSingleObject(pi.hProcess, INFINITE);
+
+    // 5. Read the output from the pipe
+    std::string output;
+    DWORD dwRead;
+    CHAR chBuf[4096];
+    BOOL bSuccess = FALSE;
+
+    do {
+        bSuccess = ReadFile(g_hChildStd_OUT_Rd, chBuf, sizeof(chBuf) - 1, &dwRead, NULL);
+        if (dwRead > 0) {
+            chBuf[dwRead] = '\0'; // Null-terminate the buffer for string conversion
+            output += chBuf;
+        }
+    } while (bSuccess && dwRead != 0);
+
+    // 6. Clean up
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    CloseHandle(g_hChildStd_OUT_Rd);
+
+    return output;
+}

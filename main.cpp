@@ -39,7 +39,6 @@ int main() {
     io.Fonts->AddFontFromFileTTF("Font Awesome 7 Free-Solid-900.otf", 16.0f, &config, icons_ranges);
 
     // io.Fonts->Build();
-
     // (void)io;
 
     ImGui::StyleColorsDark();
@@ -53,7 +52,8 @@ int main() {
     // Main loop
     while (!glfwWindowShouldClose(window) && opened) {
 
-        glfwPollEvents();
+        glfwWaitEvents();
+        // glfwPollEvents();
 
         // Start ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
