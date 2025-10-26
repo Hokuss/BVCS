@@ -3,6 +3,7 @@
 #include "branch.hpp"
 #include "json.hpp"
 #include "utils.hpp"
+#include <thread>
 
 bool error_occured = false;
 std::string error_message;
@@ -67,5 +68,22 @@ void Connector::loadfile(const std::string& file_name, Directory* parent) {
     // data = f.loadFile(file_name, parent, parent->path);
     file_name1 = file_name;
     file_path1 = parent->path;
+}
+
+void Connector::run_commands(const std::vector<std::string>& commands) {
+    thread command_thread([this, commands]() {
+        this->run_in_terminal(commands);
+    });
+    command_thread.detach();
+}
+
+void Connector::run_in_terminal(const std::vector<std::string>& commands) {
+    vector<string> result_lines_local;
+    for (const auto& command : commands) {
+        string result = exec_and_capture_hidden(command);
+        result_lines_local.push_back(result);
+    }
+    std::lock_guard<std::mutex> lock(mutex_);
+    this->result_lines = result_lines_local;
 }
 

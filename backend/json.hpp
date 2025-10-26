@@ -96,4 +96,17 @@ private:
     
 };
 
+class Options {
+    public:
+        std::string default_compiler = "g++";
+        std::vector<std::string> commands;
+
+        Options();
+        ~Options();
+
+        std::string toJson() const;
+        bool writeToFile(const std::string& filename) const;
+        bool readFromFile(const std::string& filename);
+};
+
 #endif

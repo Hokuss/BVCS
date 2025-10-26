@@ -109,7 +109,6 @@ class Soup {
             int column;
             std::string message;
         };
-        std::string compiler_path = "g++"; // Default compiler path
         std::vector<error_data> errors;
         static std::future<void> compiler_task;
         std::atomic<bool> compilation_pending = false;

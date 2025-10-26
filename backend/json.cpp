@@ -344,25 +344,96 @@ std::string DirectoryManager::unescapeJson(const std::string& str) {
     return unescaped;
 }
 
+Options::Options() {
+    readFromFile(".bvcs/options.json");
+}
 
-// int main(){
-//     DirectoryManager manager;
+Options::~Options() {
+    writeToFile(".bvcs/options.json");
+}
 
-//     manager.readFromFile("directories.json");
-//     // manager.displayAll();
+std::string Options::toJson() const {
+    std::ostringstream json;
+    json << "{\n";
+    json << "  \"default_compiler\": \"" << default_compiler << "\",\n";
+    json << "  \"commands\": [\n";
+    for (size_t i = 0; i < commands.size(); ++i) {
+        json << "    \"" << commands[i] << "\"";
+        if (i < commands.size() - 1) json << ",";
+        json << "\n";
+    }
+    json << "  ]\n";
+    json << "}";
+    return json.str();
+}
 
-//     directorydata* dir1;
-//     dir1 = manager.findDirectory("/home/user/downloads");
-//     if (dir1 == nullptr) {
-//         std::cout << "Directory not found!" << std::endl;
-//         return 1;
-//     }
-//     for(auto& dir : dir1->directories){
-//         std::cout << "Directory: " << dir << std::endl;
-//     }
-//     for(auto& file : dir1->files){
-//         std::cout << "File: " << file << std::endl;
-//     }
+bool Options::writeToFile(const std::string& filename) const {
+    std::ofstream file(filename, std::ios::trunc | std::ios::out | std::ios::binary);
+    if (!file.is_open()) {
+        std::cerr << "Error: Could not open options file for writing: " << filename << std::endl;
+        return false;
+    }
+    file << toJson();
+    file.close();   
+    return true;
+}
 
-//     return 0;
-// }
+bool Options::readFromFile(const std::string& filename) {
+    std::ifstream file(filename, std::ios::in | std::ios::binary);
+    if (!file.is_open()) {
+        std::cerr << "Warning: Could not open options file for reading: " << filename << ". Using default options." << std::endl;
+        return false;
+    }
+
+    std::string content((std::istreambuf_iterator<char>(file)),
+                        std::istreambuf_iterator<char>());
+    file.close();
+
+    try {
+        size_t pos = content.find("\"default_compiler\":");
+        if (pos != std::string::npos) {
+            size_t search_start = pos + 20; 
+            size_t q1_pos = content.find("\"", search_start);
+            
+            if (q1_pos != std::string::npos) {
+                size_t q2_pos = content.find("\"", q1_pos + 1); 
+
+                if (q2_pos != std::string::npos) {
+                    size_t substring_start = q1_pos + 1;
+                    size_t substring_length = q2_pos - substring_start;
+                    
+                    default_compiler = content.substr(substring_start, substring_length);
+                }
+            }
+        }
+
+        size_t commands_pos = content.find("\"commands\":");
+        if (commands_pos != std::string::npos) {
+            size_t array_start = content.find("[", commands_pos);
+            size_t array_end = content.find("]", array_start);
+            if (array_start != std::string::npos && array_end != std::string::npos) {
+                std::string array_content = content.substr(array_start + 1, array_end - array_start - 1);
+                commands.clear();
+
+                size_t pos = 0;
+                while (pos < array_content.length()) {
+                    size_t q1_pos = array_content.find("\"", pos);
+                    if (q1_pos == std::string::npos) break;
+
+                    size_t q2_pos = array_content.find("\"", q1_pos + 1);
+                    if (q2_pos == std::string::npos) break;
+
+                    std::string command = array_content.substr(q1_pos + 1, q2_pos - q1_pos - 1);
+                    commands.push_back(command);
+
+                    pos = q2_pos + 1; 
+                }
+            }
+        }
+
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Error parsing options JSON: " << e.what() << std::endl;
+        return false;
+    }
+}

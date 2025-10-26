@@ -2,6 +2,7 @@
 #include <stack>
 #include "Soup.hpp"
 #include "project_make.hpp"
+#include "universal.hpp"
 #include <algorithm>
 // #include "subprocess.hpp"
 
@@ -49,10 +50,6 @@ bool Soup::render() {
     ImGui::SameLine();
     if (ImGui::Button("Save")) {
         saveFile();
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Make")) {
-        make_project();
     }
     ImGui::SameLine();
     ImGui::Text("Errors: %d", static_cast<int>(errors.size()));
@@ -169,7 +166,7 @@ ImU32 Soup::GetColor(wordtype type){
         case wordtype::comment: return IM_COL32(87, 166, 74, 255); // Green
         case wordtype::multilinecomment: return IM_COL32(87, 166, 74, 255); // Green
         case wordtype::background: return IM_COL32(30, 30, 30, 255); // Dark Gray
-        case wordtype::cursor: return IM_COL32(255, 255, 255, 255); // Light Gray with transparency
+        case wordtype::cursor: return IM_COL32(255, 255, 255, 255); // White
         case wordtype::selection: return IM_COL32(51, 153, 255, 100); // Light Blue with transparency
         case wordtype::errormarker: return IM_COL32(255, 0, 0, 200); // Red with transparency
         case wordtype::breakpoint: return IM_COL32(255, 0, 0, 200); // Red with more opacity
@@ -998,7 +995,7 @@ void Soup::scancplusplus(lines& lines_to_scan) {
 std::future<void> Soup::compiler_task;
 
 void Soup::compilecplusplus(lines &lines_to_compile) {
-    if (compiler_path.empty() && lines_to_compile.size() <= 0) {
+    if (project_options.default_compiler.empty() && lines_to_compile.size() <= 0) {
         return;
     }
 
@@ -1013,7 +1010,7 @@ void Soup::compilecplusplus(lines &lines_to_compile) {
         try {
         saveFile();
         
-        std::string command = compiler_path + " -fsyntax-only \"" + alt_file_path + "\"";
+        std::string command = project_options.default_compiler + " -fsyntax-only \"" + alt_file_path + "\"";
         std::string output = exec_and_capture_hidden(command);
 
         std::vector<error_data> new_errors;
@@ -1057,7 +1054,8 @@ void Soup::compilecplusplus(lines &lines_to_compile) {
         // For example, compiler_path is invalid
         std::lock_guard<std::mutex> lock(line_mutex);
         errors.clear();
-        errors.push_back({0, 0, "Error: Failed to execute compiler."});
+        std::string message = "Error: Could not execute compiler: " + project_options.default_compiler;
+        errors.push_back({0, 0, message});
     }
     });
 

@@ -1,11 +1,15 @@
+#include "universal.hpp"
 #include "mainspace.hpp"
 #include "connector.hpp"
 #include "IconsFontAwesome6.h"
 #include "Soup.hpp"
+#include "json.hpp"
+#include "imgui_stdlib.h"
 
 bool side_menu_opened = true;
 bool main_text = false;
 bool compare_text = false;
+bool options = false;
 
 static Connector a;
 Soup* main_soup = nullptr;
@@ -295,19 +299,183 @@ void ShowFileExplorerSidebar(FileExplorer* explorer, ImVec2 size = ImVec2(250, 0
     ImGui::EndChild();
 }
 
+void OptionsWindow(){
+    ImGui::OpenPopup("Options Window");
+    if(ImGui::BeginPopupModal("Options Window", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        if (ImGui::Button("Save & Close")) {
+            options = false;
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::Text("Default Compiler: ");
+        ImGui::SameLine();
+        ImGui::InputText("##default_compiler", &project_options.default_compiler);
+
+        static int index = -1;
+        static char command_buffer[1024] = "";
+        ImGui::Separator();
+        ImGui::Text("Build Commands:");
+
+        float list_height = 200.0f;
+
+        ImGui::BeginChild("CommandButtons", ImVec2(100,list_height), false, ImGuiWindowFlags_NoScrollbar);
+
+        if (ImGui::Button("Add Command")) {
+            project_options.commands.push_back("new_command");
+            index = project_options.commands.size() - 1;
+            strncpy(command_buffer, "new_command", sizeof(command_buffer));
+            ImGui::OpenPopup("RenameCommand");
+        }
+
+        bool item_selected = index >= 0 && index < project_options.commands.size();
+        ImGui::BeginDisabled(!item_selected);
+        {
+            if (ImGui::Button("Remove Command")) {
+                if (item_selected) {
+                    project_options.commands.erase(project_options.commands.begin() + index);
+                    index = -1;
+                }
+            }
+
+            if (ImGui::Button("Change Command")) {
+                if (item_selected) {
+                    strncpy(command_buffer, project_options.commands[index].c_str(), sizeof(command_buffer));
+                    ImGui::OpenPopup("RenameCommand");
+                }
+            }
+
+            if (ImGui::Button("Move Up")) {
+                if (item_selected && index > 0) {
+                    std::swap(project_options.commands[index], project_options.commands[index - 1]);
+                    index--;
+                }
+            }
+
+            if (ImGui::Button("Move Down")) {
+                if (item_selected && index < project_options.commands.size() - 1) {
+                    std::swap(project_options.commands[index], project_options.commands[index + 1]);
+                    index++;
+                }
+            }
+        }
+        ImGui::EndDisabled();
+        ImGui::EndChild();
+
+        ImGui::SameLine();
+
+        // Fixes 
+
+
+        size_t index_to_remove = -1;
+        size_t index_to_rename = -1;
+        size_t index_to_move_up = -1;
+        size_t index_to_move_down = -1;
+
+        float avail_width = ImGui::GetContentRegionAvail().x;
+        ImGui::BeginChild("CommandList", ImVec2(avail_width, -1), true);
+
+        for (size_t i = 0; i < project_options.commands.size(); ++i) {
+            const bool is_selected = (index == i);
+            if (ImGui::Selectable(project_options.commands[i].c_str(), is_selected)) {
+                index = i;
+            }
+
+            if (ImGui::BeginPopupContextItem()) {
+                if (ImGui::MenuItem("Remove Command")) {
+                    index_to_remove = i;
+                }
+                if (ImGui::MenuItem("Change Command")) {
+                    index_to_rename = i;
+                }
+                if (ImGui::MenuItem("Move Up")) {
+                    index_to_move_up = i;
+                }
+                if (ImGui::MenuItem("Move Down")) {
+                    index_to_move_down = i;
+                }
+                ImGui::EndPopup();
+            }
+
+            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+                index_to_rename = i;
+            }
+        }
+        ImGui::EndChild();
+
+        // Process deferred actions
+        if (index_to_remove != (size_t)-1) {
+            project_options.commands.erase(project_options.commands.begin() + index_to_remove);
+            if (index >= index_to_remove && index > 0) {
+                index--;
+            }
+        }
+        if (index_to_rename != (size_t)-1) {
+            index = index_to_rename;
+            strncpy(command_buffer, project_options.commands[index].c_str(), sizeof(command_buffer));
+            ImGui::OpenPopup("RenameCommand");
+        }
+        if (index_to_move_up != (size_t)-1) {
+            size_t i = index_to_move_up;
+            if (i > 0) {
+                std::swap(project_options.commands[i], project_options.commands[i - 1]);
+                if (index == i) index--;
+                else if (index == i - 1) index++;
+            }
+        }
+        if (index_to_move_down != (size_t)-1) {
+            size_t i = index_to_move_down;
+            if (i < project_options.commands.size() - 1) {
+                std::swap(project_options.commands[i], project_options.commands[i + 1]);
+                if (index == i) index++;
+                else if (index == i + 1) index--;
+            }
+        }
+
+        // Rename Command Popup
+        if (ImGui::BeginPopupModal("RenameCommand", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::InputText("##rename_command", command_buffer, IM_ARRAYSIZE(command_buffer));
+
+            if (ImGui::Button("OK")) {
+                if (index >= 0 && index < project_options.commands.size() && strlen(command_buffer) > 0) {
+                    project_options.commands[index] = std::string(command_buffer);
+                }
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel")) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
+        ImGui::EndPopup();
+    }
+}
+
 void main_menu() {
     if(error_occured){
         Error();
     }
-    ImGui::Text("Project: BVCS V-0.1");
-    ImGui::SameLine();
-    ImGui::SetCursorPos(ImVec2(ImGui::GetWindowWidth() - ImGui::CalcTextSize("Version: 0.1").x - 10, ImGui::GetTextLineHeight() + ImGui::CalcTextSize("Close").y + 30));
-    ImGui::Text("Version: 0.1");
-
-    ImGui::Separator();
     if(ImGui::Button("Side Menu")) {
         side_menu_opened = !side_menu_opened;
     }
+    ImGui::SameLine();
+    if(ImGui::Button("Options")){
+        options = true;
+    }
+    if(options){
+        OptionsWindow();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Run Commands")) {
+        a.run_commands(project_options.commands);
+        ImGui::OpenPopup("Command Output");
+    }
+    ImGui::SameLine();
+    ImGui::SetCursorPos(ImVec2(ImGui::GetWindowWidth() - ImGui::CalcTextSize("Version: 0.1").x - 10, ImGui::GetTextLineHeight() + ImGui::CalcTextSize("Close").y));
+    ImGui::Text("Version: 0.1");
+
+    ImGui::Separator();
 
     if (side_menu_opened) {
 
@@ -353,7 +521,6 @@ void main_menu() {
         }
     }
 
-    ImGui::SameLine();
 
     if (main_text) {
         if (!main_soup) {
@@ -366,13 +533,48 @@ void main_menu() {
                 main_soup = nullptr;
             }
         }
-        else if (main_soup) {
+        
+        ImGui::SameLine();
+
+        if (main_soup) {
             if (!main_soup->render()) {
                 delete main_soup;
                 main_soup = nullptr;
                 main_text = false;
             }
         }
+    }
+
+    if (ImGui::BeginPopupModal("Command Output", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("Tasks:");
+        ImGui::Separator();
+
+        ImGui::BeginChild("OutputRegion", ImVec2(800, 400), true, ImGuiWindowFlags_HorizontalScrollbar);
+        {
+            std::vector<std::string> lines;
+            {
+                std::lock_guard<std::mutex> lock(a.mutex_);
+                lines = a.result_lines;
+            }
+            for (int i = 0; i < project_options.commands.size(); ++i) {
+                ImGui::TextUnformatted(("Command: " + project_options.commands[i]).c_str());
+                ImGui::Separator();
+                if (i < lines.size()) {
+                    ImGui::TextUnformatted(("Command Output:\n" + lines[i]).c_str());
+                } else {
+                    ImGui::TextUnformatted("No output captured.");
+                }
+                ImGui::Separator();
+            }
+        }
+        ImGui::EndChild();
+
+        if (ImGui::Button("Close")) {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
     }
 
     // if(ImGui::Button("Test")){

@@ -9,6 +9,7 @@
 #include <fstream>
 #include <unordered_set>
 #include <filesystem>
+#include <mutex>
 #include "imgui.h"
 
 namespace fs = std::filesystem;
@@ -68,10 +69,15 @@ class Connector {
         Connector() = default;
         ~Connector() = default;
 
+        std::vector<std::string> result_lines;
+        std::mutex mutex_;
+
         void start();
         void next();
         void dsmantle();
         void change_detector();
+        void run_commands(const std::vector<std::string>& commands);
+        void run_in_terminal(const std::vector<std::string>& commands);
         // void save(std::string file_name, fs::path file_path = fs::current_path());
         void branches();
         void loadfile(const std::string& file_name, Directory* parent = nullptr);
