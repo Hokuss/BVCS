@@ -1,6 +1,6 @@
 # BVCS - Basic Version Control System
 
-## A completely integerated developeemnt envorement. 
+## A completely integerated developeemnt environment. 
 
 ![Gemini_Generated_Image_9l18fz9l18fz9l18](https://github.com/user-attachments/assets/23bce804-34c7-4ee2-896a-df0b3c816db7)
 
@@ -16,11 +16,14 @@ BVCS is born from that yearning. It's not designed to manage the Linux kernel, n
 
 * In-Built version control system. 
 * Large text editor is present with syntax highlighting feature. (Currently supports c/c++ syntax highlighting.)
-* A simple 'Make' button that runs the commands you provide in the Options menu in sequence. 
+* A simple 'Make' button that runs the commands you provide in the Options menu in sequence.
 
 ## ✨ Future Features
 
 * Optimizations: Enhance performance and storage efficiency as the project evolves.
+* Add a change detector compare screen for the cersion control system.
+* Also improvements inside the Version control system to be able to merge and detect the changes better.
+* Better branch visualiztion. 
 * Community Input: Your comments and suggestions are welcome and will be considered for future development!
 
 ## 🛠️ How it (Conceptually) Works
