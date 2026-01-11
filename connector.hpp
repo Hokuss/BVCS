@@ -10,6 +10,7 @@
 #include <unordered_set>
 #include <filesystem>
 #include <mutex>
+#include <chrono>
 #include "imgui.h"
 
 namespace fs = std::filesystem;
@@ -37,6 +38,8 @@ struct Directory : public item {
 
 class FileExplorer {
     public:
+        std::chrono::time_point<std::chrono::steady_clock> last = std::chrono::steady_clock::now();
+
         bool clipboard = false;
         bool clipboard_active = false;
         std::vector<File*> clipboard_files;

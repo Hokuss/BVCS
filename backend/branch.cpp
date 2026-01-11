@@ -7,8 +7,7 @@ string branch_name;
 void config_parser() {
     ifstream inputfile(".bvcs/cnfg.bin", ios::binary);
     if (!inputfile.is_open()) {
-        cerr << "Fatal Error! Configuration Missing. If this is the first time the project is using the BVCS. Please use 'Start' command." << endl;
-        return; // Return an error code
+        throw std::runtime_error( "Fatal Error! Configuration Missing. If this is the first time the project is using the BVCS. Please use 'Start' command.");
     }
     
     std::string line;
@@ -22,19 +21,16 @@ void config_parser() {
                 // Substring from the character after the colon and space
                 version = std::stoi(line.substr(colon_pos + 2));
             } catch (const std::invalid_argument& ia) {
-                std::cerr << "Fatal Error! Invalid version number in configuration." << std::endl;
                 inputfile.close();
-                return;
+                throw std::runtime_error( "Fatal Error! Invalid version number in configuration." );
             }
         } else {
-            std::cerr << "Fatal Error! Version line malformed in configuration." << std::endl;
             inputfile.close();
-            return;
+            throw std::runtime_error( "Fatal Error! Version line malformed in configuration.");
         }
     } else {
-        std::cerr << "Fatal Error! Configuration file is empty or corrupted." << std::endl;
         inputfile.close();
-        return;
+        throw std::runtime_error( "Fatal Error! Configuration file is empty or corrupted." );
     }
 
     // --- Parse Branch_name ---
@@ -44,18 +40,17 @@ void config_parser() {
             // Substring from the character after the colon and space
             branch_name = line.substr(colon_pos + 2);
         } else {
-             std::cerr << "Fatal Error! Branch_name line malformed in configuration." << std::endl;
-             inputfile.close();
-             return;
+            inputfile.close();
+            throw std::runtime_error( "Fatal Error! Invalid version number in configuration." );
         }
     } else {
-        std::cerr << "Fatal Error! Branch_name name missing in configuration." << std::endl;
         inputfile.close();
-        return;
+        throw std::runtime_error( "Fatal Error! Version line malformed in configuration.");
     }
 
     if (branch_name.empty()) {
-        std::cerr << "Fatal Error! Branch_name name missing in configuration." << std::endl;
+        inputfile.close();
+        throw std::runtime_error("Fatal Error! Branch_name name missing in configuration.");
         // The return is handled by the check above, but this is a good safeguard.
     }
 

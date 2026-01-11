@@ -137,7 +137,7 @@ void RenderFile(File* file, Directory* parent, FileExplorer* explorer)
         ImVec4 color = GetFileColor(file->name);
 
         ImGui::PushStyleColor(ImGuiCol_Text, color);
-        ImGui::TreeNodeEx((void*)file, file_flags,"%s %s", icon, file->name.c_str());
+        ImGui::TreeNodeEx(file->path.c_str(), file_flags, "%s %s", icon, file->name.c_str());
         ImGui::PopStyleColor();
 
         if (ImGui::IsItemClicked()){
@@ -211,7 +211,7 @@ void RenderDirectory(Directory* dir, FileExplorer* explorer, Directory* parent =
         dir->color = dir->open ? ImVec4(0.0f, 1.0f, 0.0f, 1.0f) : ImVec4(1.0f, 1.0f, 0.5f, 1.0f);
 
         ImGui::SetNextItemOpen(dir->open);
-        node_open = ImGui::TreeNodeEx((void*)dir, node_flags, "");
+        node_open = ImGui::TreeNodeEx(dir->path.c_str(), node_flags, "");
 
         dir->open = node_open;
         ImGui::SameLine();
@@ -489,11 +489,15 @@ void main_menu() {
             ImGui::Separator();
 
             ImGui::BeginChild("Actions", ImVec2(side_menu_width, side_menu_width/2), true);
-            a.branches();
+            try {
+                a.branches();
 
-            Dropdown(a.current_branch, a.branch_names, "Branches");
-            // Fix the branches function to return the correct version names instead of empty vector
-            Dropdown(a.current_version, a.version_names, "Versions");
+                Dropdown(a.current_branch, a.branch_names, "Branches");
+                
+                Dropdown(a.current_version, a.version_names, "Versions");
+            } catch (std::runtime_error &e) {
+                ImGui::Text(e.what());
+            }
 
             ImGui::EndChild();
 
@@ -512,7 +516,21 @@ void main_menu() {
             if (ImGui::Button("Dismantle")) {
                 a.dsmantle();
             }
+            // Immplement a Better file Explorer so that Automatc refresh could work
+            // Also it will remove the bug of the Changing file/folder closing the file/folder
+
+            // if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - a.f.last) > std::chrono::milliseconds(2000))
+            // {
+            //     // 1. Don't refresh if user is currently renaming something (it interrupts typing)
+            //     if (renaming_item == nullptr | last_selected_item != nullptr) 
+            //     {
+            //         a.f.refresh();
             
+
+            //         a.f.last = std::chrono::steady_clock::now();
+            //     }
+            // }
+            if(ImGui::Button("Refresh")) a.f.refresh();
             ShowFileExplorerSidebar(&a.f, ImVec2(side_menu_width, remain_space.y - 10));
 
             ImGui::EndChild();
@@ -576,11 +594,5 @@ void main_menu() {
 
         ImGui::EndPopup();
     }
-
-    // if(ImGui::Button("Test")){
-    //     f.refresh();
-    //     f.show();
-    // }
-    
 
 }

@@ -411,8 +411,7 @@ std::vector<std::string> all_branches() {
     std::vector<std::string> branches;
     fs::path version_history = ".bvcs/version_history";
     if (!fs::exists(version_history) || !fs::is_directory(version_history)) {
-        std::cerr << "Version history directory does not exist: " << version_history.string() << std::endl;
-        return branches;
+        throw std::runtime_error( "Version history directory does not exist: " + version_history.string() );
     }
     for (const auto& entry : fs::directory_iterator(version_history)) {
         if (fs::is_directory(entry.path())) {
@@ -427,8 +426,7 @@ std::vector<std::string> all_versions(const std::string& branch_name) {
     std::vector<std::string> versions;
     fs::path branch_path = ".bvcs/version_history/" + branch_name;
     if (!fs::exists(branch_path) || !fs::is_directory(branch_path)) {
-        error_occured = true;
-        error_message = "Branch does not exist: " + branch_name;
+        throw std::runtime_error("Branch does not exist: " + branch_name);
     }
     for (const auto& entry : fs::directory_iterator(branch_path)) {
         if (fs::is_directory(entry.path())) {
@@ -436,8 +434,7 @@ std::vector<std::string> all_versions(const std::string& branch_name) {
         }
     }
     if (versions.empty()) {
-        error_occured = true;
-        error_message = "No versions found for branch: " + branch_name;
+        throw std::runtime_error("No versions found for branch: " + branch_name);
     }
     return versions;
 }

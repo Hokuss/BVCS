@@ -258,20 +258,21 @@ void begin(){
     outputfile2 << "--files" << endl;
     outputfile2<< "Place Filenames here!" << endl;
     outputfile2 << "ignore.txt" << endl;
-    outputfile2 << "core.exe" << endl;
+    outputfile2 << "main.exe" << endl;
+    outputfile2 << "imgui.ini" << endl;
     outputfile2 << "--directories" << endl;
     outputfile2<< "Place Directory Names here!" << endl;
     outputfile2 << ".bvcs" << endl;
     outputfile2 << "--end" << endl;
     outputfile2.close();
-    cout<< "Please add files/directories to the ignore list in 'ignore.txt' file!" << endl;
-    cout<< "Then press 'Start' to start staging!" << endl;
+    // cout<< "Please add files/directories to the ignore list in 'ignore.txt' file!" << endl;
+    // cout<< "Then press 'Start' to start staging!" << endl;
     // if(cin.get() == '\n'){
-        cout<< "Starting to stage the current project..." << endl;
-        starter_function();
-        ofstream outputfile1(".bvcs/current_commit/dir.json", ios::app);
-        outputfile1.close();
-        file_check(dirPath);
+        // cout<< "Starting to stage the current project..." << endl;
+    starter_function();
+    ofstream outputfile1(".bvcs/current_commit/dir.json", ios::app);
+    outputfile1.close();
+    file_check(dirPath);
     //     return;
     // }
     // else{

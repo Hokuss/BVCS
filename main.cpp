@@ -5,6 +5,30 @@
 #include "mainspace.hpp"
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include "font.h"
+
+void LoadFonts(ImGuiIO& io) {
+    // Setup config as you did before
+    static ImFontConfig config;
+    config.MergeMode = true;
+    config.PixelSnapH = true;
+    
+    // Setup ranges as you did before
+    static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+
+    // --- OLD METHOD ---
+    // io.Fonts->AddFontFromFileTTF("Font Awesome 7 Free-Solid-900.otf", 16.0f, &config, icons_ranges);
+
+    // --- NEW STATIC METHOD ---
+    // Use the array name and length variable from the generated header file
+    io.Fonts->AddFontFromMemoryTTF(
+        (void*)Font_Awesome_7_Free_Solid_900_otf,      // The array from the header
+        sizeof(Font_Awesome_7_Free_Solid_900_otf),  // The size from the header
+        16.0f,                                  // Size in pixels
+        &config,                                // Config
+        icons_ranges                            // Ranges
+    );
+}
 
 int main() {
     // Initialize GLFW
@@ -36,7 +60,8 @@ int main() {
 
     static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_16_FA, 0 };
 
-    io.Fonts->AddFontFromFileTTF("Font Awesome 7 Free-Solid-900.otf", 16.0f, &config, icons_ranges);
+    // io.Fonts->AddFontFromFileTTF("Font Awesome 7 Free-Solid-900.otf", 16.0f, &config, icons_ranges);
+    LoadFonts(io);
 
     // io.Fonts->Build();
     // (void)io;
